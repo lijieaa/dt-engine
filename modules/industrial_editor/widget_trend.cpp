@@ -113,7 +113,7 @@ void WidgetTrend::clear() {
 }
 
 String WidgetTrend::get_version() const {
-	return "0.1.1";
+	return "0.1.0";
 }
 
 void WidgetTrend::_bind_methods() {
