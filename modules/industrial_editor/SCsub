@@ -1,0 +1,71 @@
+#!/usr/bin/env python
+"""SCons build glue for the industrial_editor module.
+
+Sources:
+- register_types.cpp             — GDREGISTER_CLASS registration
+- industrial_editor_plugin.cpp   — EditorPlugin subclass (menu + dock wiring)
+- industrial_device_dock.cpp     — Device list dock (Tree + search + buttons)
+- industrial_tag_dock.cpp       — Tag browser dock (global Tree + filter)
+- industrial_device_form.cpp     — Device property form (dynamic fields)
+- industrial_tag_form.cpp       — Tag property form
+- industrial_new_device_dialog.cpp — New device 3-step dialog with embedded tags
+- industrial_new_tag_dialog.cpp  — New/edit tag dialog
+- industrial_batch_gen_dialog.cpp — Batch generate tags dialog
+- industrial_project.cpp         — Project model + JSON save/load
+- industrial_driver_schema.cpp   — 7 driver field schemas
+- industrial_runtime_client.cpp — Cross-platform HTTP client (HTTPRequest node)
+- industrial_validate.cpp        — Project validation (duplicates, required, address syntax)
+- industrial_csv_io.cpp         — CSV import/export
+"""
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_ie = env_modules.Clone()
+
+# ---- Force cl.exe to interpret this module's .cpp files as UTF-8 ---------
+#
+# Context for the repeated CJK mojibake issues:
+# platform/windows/detect.py already appends a global `/utf-8` CCFLAG to the
+# *top-level* env.  When `env_modules.Clone()` replicates that env for 3rd-party
+# modules, we do get the flag (proven by the previous build's D8016 conflict
+# when we also added /source-charset:utf-8 here).  However some Godot module
+# envs still fall back to the user's ANSI locale on individual cl.exe calls,
+# so we take TWO defensive layers that never conflict:
+#   1. AppendUnique `/utf-8` one more time (safe; no-op if already present).
+#   2. Every C++ source under modules/industrial_editor that contains Chinese
+#      or symbol UTF-8 literals is stored on-disk with a UTF-8 BOM (see the
+#      PowerShell script run during industrial_driver_schema.cpp edits).
+#      With a BOM present cl.exe always decodes the TU as UTF-8 regardless of
+#      any CCFLAGS or machine locale, eliminating the "采集周期 → é‡‡é›†"
+#      mojibake permanently.
+#
+# We deliberately do NOT issue /source-charset /execution-charset here because
+# cl.exe considers those incompatible with /utf-8 (D8016), see prior build log.
+env_ie.AppendUnique(CCFLAGS=["/utf-8"])
+
+sources = [
+    "register_types.cpp",
+    "industrial_editor_plugin.cpp",
+    "industrial_device_dock.cpp",
+    "industrial_tag_dock.cpp",
+    "industrial_device_form.cpp",
+    "industrial_tag_form.cpp",
+    "industrial_new_device_dialog.cpp",
+    "industrial_new_tag_dialog.cpp",
+    "industrial_batch_gen_dialog.cpp",
+    "industrial_project.cpp",
+    "industrial_driver_schema.cpp",
+    "industrial_runtime_client.cpp",
+    "industrial_validate.cpp",
+    "industrial_csv_io.cpp",
+    "widget_format.cpp",
+    "widget_trend.cpp",
+    "widget_alarm.cpp",
+    "widget_meter.cpp",
+    "widget_recipe.cpp",
+    "widget_macro.cpp",
+]
+
+env_ie.add_source_files(env.modules_sources, sources)
