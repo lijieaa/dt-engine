@@ -1,0 +1,36 @@
+; Engine configuration file for the industrial visualization client.
+;
+; This project is meant to be opened with the CUSTOM Godot editor binary that
+; ships the industrial_runtime module built into it, i.e.
+; `D:\dt-engine\bin\godot.windows.editor.x86_64.exe` produced by running
+; `scons platform=windows target=editor` from `D:\dt-engine`.
+;
+; Without that custom binary, Godot won't see the IndustrialRuntime / TagBinding
+; / TagCache classes and the project will fail to run its autoload or bind the
+; custom scene nodes properly.
+
+config_version=5
+
+[application]
+
+config/name="IndustrialVisualization"
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+config/icon="res://icon.svg"
+
+[autoload]
+
+Runtime="*res://scripts/Runtime.gd"
+WidgetBridge="*res://addons/industrial_widgets/autoload/widget_bridge.gd"
+
+[display]
+
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/stretch/mode="view"
+window/stretch/aspect="keep"
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+environment/defaults/default_clear_color=Color(0.06, 0.08, 0.11, 1)
