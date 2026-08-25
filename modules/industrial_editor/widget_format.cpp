@@ -129,7 +129,7 @@ Dictionary WidgetFormat::parse_input(const String &text, const Dictionary &cfg) 
 	// Empty string is never valid.
 	String trimmed = text.strip_edges();
 	if (trimmed.is_empty()) {
-		result["error"] = "输入为空";
+		result["error"] = TTRC("输入为空");
 		return result;
 	}
 
@@ -139,7 +139,7 @@ Dictionary WidgetFormat::parse_input(const String &text, const Dictionary &cfg) 
 	for (int i = 0; i < trimmed.length(); i++) {
 		char32_t c = trimmed[i];
 		if (ALLOWED.find(String::chr(c)) == -1) {
-			result["error"] = "包含非法字符";
+			result["error"] = TTRC("包含非法字符");
 			return result;
 		}
 	}
@@ -179,19 +179,19 @@ Dictionary WidgetFormat::parse_input(const String &text, const Dictionary &cfg) 
 			digits = digits.substr(1);
 		}
 		if (digits.is_empty()) {
-			result["error"] = "没有有效数字";
+			result["error"] = TTRC("没有有效数字");
 			return result;
 		}
 
 		// Also reject float-ish input when decimals == 0 (e.g. "3.5").
 		if (digits.contains(".") || digits.contains("e") || digits.contains("E")) {
-			result["error"] = "需要整数，收到浮点数";
+			result["error"] = TTRC("需要整数，收到浮点数");
 			return result;
 		}
 
 		int64_t val = 0;
 		if (!to_integer(digits, base, val)) {
-			result["error"] = "数字越界或非法";
+			result["error"] = TTRC("数字越界或非法");
 			return result;
 		}
 		if (neg) {
@@ -203,7 +203,7 @@ Dictionary WidgetFormat::parse_input(const String &text, const Dictionary &cfg) 
 		// Float parse.
 		bool valid = trimmed.is_valid_float();
 		if (!valid) {
-			result["error"] = "不是有效的浮点数";
+			result["error"] = TTRC("不是有效的浮点数");
 			return result;
 		}
 		double d = (double)trimmed.to_float();
