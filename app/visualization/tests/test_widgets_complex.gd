@@ -29,6 +29,8 @@ func _force_bridge_mock() -> void:
 	if mock == null:
 		_failures.append("mock 源未挂载")
 		return
+	# 关闭自动 tick：测试全靠显式 push 驱动（避免随机模式 tag 干扰断言）
+	mock.set("tick_interval", 0)
 	# 确定性 tag 集（避免开场随机正弦造成歧义）
 	mock.call("add_mock_tag", "NUM1", "sine", 0.0, 100.0)
 	mock.call("add_mock_tag", "NUM2", "sine", 0.0, 1.0)
