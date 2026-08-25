@@ -1,12 +1,15 @@
 extends Node
-## WidgetBridge — 统一数据桥（Task 1，模式A 双轨）。
+## WidgetBridge — 统一数据桥（三态检测）。
 ##
-## 模式A：优先复用 C++ IndustrialRuntime singleton（自定义引擎模块，单例由
-## Runtime autoload 持有）；兜底：标准 Godot 用 GDExtension DLL（Task 7 接入）或
-## mock 数据源（widget_bridge_mock.gd）。
+## 三态优先级：
+##   1. cpp_runtime — C++ IndustrialRuntime 模块已编译进引擎（自定义引擎 build）
+##   2. native_module — WidgetFormat/WidgetTrend 等 C++ 类已通过 ClassDB 注册
+##      （Ruling W5：所有 widget C++ 在 modules/industrial_editor/ 编译，无独立 DLL）
+##      数据通道仍走 mock，但 C++ 格式/历史/报警核心可供元件直接调用。
+##   3. mock — 纯 GDScript 模拟数据源（widget_bridge_mock.gd）
 ##
-## 解析可移植性：本脚本不得直接引用 `IndustrialRuntime` / `WidgetNative` 的类
-## 标识符（在无这些类的引擎上会解析失败）。检测一律走 ClassDB.class_exists(...)，
+## 解析可移植性：本脚本不得直接引用 `IndustrialRuntime` / widget C++ 类的标识符
+## （在无这些类的引擎上会解析失败）。检测一律走 ClassDB.class_exists(...)，
 ## 实例化走 ClassDB.instantiate(...)，绑定 C++ 静态 get_singleton() 经实例动态调用
 ## （见 _resolve_rt()，对应 Ruling W2）。
 
@@ -20,10 +23,12 @@ const MOCK_SCRIPT := "res://addons/industrial_widgets/autoload/widget_bridge_moc
 
 ## 强制使用 mock 数据源（测试可置 true 后重调 _detect_backend()；_ready 后可重入）。
 var use_mock: bool = false
-## 检测到的桥接模式："" 未检测 / "cpp_runtime" / "mock"（Task 7 追加 "native_dll"）
+## 检测到的桥接模式："" 未检测 / "cpp_runtime" / "native_module" / "mock"
 var bridge_mode: String = ""
 ## 实际后端代理：IndustrialRuntime 实例（复用 Runtime autoload 单例）或 null
 var _rt: Object = null
+## 已探测到的 widget C++ 类清单（native_module 模式下非空；Ruling W5：类直接编译进引擎）
+var native_classes: Array[String] = []
 var _mock: Node = null
 var _connected: bool = false
 var _detected: bool = false
@@ -31,8 +36,12 @@ var _detected: bool = false
 func _ready() -> void:
 	_detect_backend()
 
-## 检测后端并建立信号转发。可在 _ready 之后重入（测试用）。
-## 优先：C++ IndustrialRuntime；兜底：mock（Task 7 插入 native_dll 档）。
+## 三态检测：
+##   1. cpp_runtime — C++ IndustrialRuntime 模块（自定义引擎 build）
+##   2. native_module — widget C++ 类已编译进引擎（Ruling W5，类经 ClassDB 注册）
+##      数据通道走 mock，C++ 格式/历史/报警核心供元件直接调用
+##   3. mock — 纯 GDScript 模拟数据源
+## 可在 _ready 之后重入（测试用）。
 func _detect_backend() -> void:
 	_detected = true
 	if not use_mock:
@@ -44,18 +53,48 @@ func _detect_backend() -> void:
 			backend_detected.emit(true)
 			return
 		_rt = null
+		# 档2：widget C++ 类已编译进引擎（无独立 DLL，直接探测各 Widget* 类）
+		if _detect_native_classes():
+			bridge_mode = "native_module"
+			_setup_mock()  # 数据通道走 mock（C++ 核心类供元件直接调用）
+			backend_detected.emit(true)
+			return
+	# 档3：纯 mock
 	use_mock = true
 	bridge_mode = "mock"
-	if _mock == null:
-		if not ResourceLoader.exists(MOCK_SCRIPT):
-			push_warning("WidgetBridge: mock 脚本缺失，bridge 空闲")
-			backend_detected.emit(false)
-			return
-		_mock = (load(MOCK_SCRIPT) as GDScript).new()
-		add_child(_mock)  # 入树后其 _process 每帧自动 tick（模拟数据生成）
-		_mock.set("bridge", self)
-		_mock.tag_changed.connect(Callable(self, "_on_rt_tag_changed"))
+	_setup_mock()
 	backend_detected.emit(false)
+
+## 挂载 mock 数据源（幂等：_mock 已存在则跳过）。
+func _setup_mock() -> void:
+	if _mock != null:
+		return
+	if not ResourceLoader.exists(MOCK_SCRIPT):
+		push_warning("WidgetBridge: mock 脚本缺失，bridge 空闲")
+		return
+	_mock = (load(MOCK_SCRIPT) as GDScript).new()
+	add_child(_mock)  # 入树后其 _process 每帧自动 tick（模拟数据生成）
+	_mock.set("bridge", self)
+	_mock.tag_changed.connect(Callable(self, "_on_rt_tag_changed"))
+
+## 探测编译进引擎的 widget C++ 类（Ruling W5：类各自经 ClassDB 注册，无 WidgetNative 门面）。
+## 任一存在即认为 native_module 可用；记录全部已注册的 Widget* 类作能力清单。
+func _detect_native_classes() -> bool:
+	var candidates := [
+		"WidgetFormat", "WidgetTrend", "WidgetAlarm",
+		"WidgetMeter", "WidgetRecipe", "WidgetMacro",
+	]
+	native_classes = []
+	for cls in candidates:
+		if ClassDB.class_exists(cls):
+			native_classes.append(cls)
+	return not native_classes.is_empty()
+
+## native_module 模式下是否已检测到 C++ widget 类。
+func has_native() -> bool:
+	if not _detected:
+		_detect_backend()
+	return bridge_mode == "native_module" and not native_classes.is_empty()
 
 ## 解析 C++ IndustrialRuntime 实例：优先复用 Runtime autoload 持有的单例
 ## （Ruling W2 —— 该类只 GDREGISTER_CLASS，Engine.get_singleton 恒为 null）。

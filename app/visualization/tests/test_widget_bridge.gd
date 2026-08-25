@@ -1,10 +1,11 @@
 extends SceneTree
-## WidgetBridge 单测（Task 1）。
+## WidgetBridge 单测（Task 1 + Task 7 三态检测）。
 ## 通过 res:// 路径动态加载（不依赖编辑器缓存/类标识符），headless --script 运行。
-## 用例对应 plan Task 1 Step 2：
+## 用例对应 plan Task 1 Step 2 + Task 7：
 ##   1. test_subscribe_calls_runtime_when_available
 ##   2. test_write_tag_emits_write_result
 ##   3. test_mock_mode_emits_tag_changed
+##   4. test_three_mode_detection (T7：cpp_runtime / native_module / mock)
 
 const BRIDGE_SCRIPT := "res://addons/industrial_widgets/autoload/widget_bridge.gd"
 
@@ -21,6 +22,7 @@ func _run_all() -> int:
 	await test_subscribe_calls_runtime_when_available()
 	await test_write_tag_emits_write_result()
 	await test_mock_mode_emits_tag_changed()
+	await test_three_mode_detection()
 	if _failures.is_empty():
 		print("RESULT: PASS")
 		return 0
@@ -134,4 +136,41 @@ func test_mock_mode_emits_tag_changed() -> void:
 			found_t2 = true
 	_check(found_t1, "收到 T1=42/good")
 	_check(found_t2, "收到 T2=true")
+	bridge.free()
+
+## 用例4（T7）：三态检测 — cpp_runtime / native_module / mock。
+## 本引擎为自定义 build（IndustrialRuntime + widget C++ 类编译在内），因此期望：
+##   - 有 IndustrialRuntime → cpp_runtime
+##   - 否则有 Widget* 类 → native_module
+##   - 都没有 → mock（用 use_mock 强制验证 mock 档逻辑独立可用）
+func test_three_mode_detection() -> void:
+	print("[test] three_mode_detection")
+	var bridge: Node = await _make_bridge()
+	if bridge == null:
+		return
+	var has_rt: bool = ClassDB.class_exists("IndustrialRuntime")
+	var has_widget_native: bool = (
+		ClassDB.class_exists("WidgetFormat")
+		or ClassDB.class_exists("WidgetTrend")
+		or ClassDB.class_exists("WidgetAlarm")
+	)
+	var mode: String = bridge.get("bridge_mode")
+	if has_rt:
+		_check(mode == "cpp_runtime", "bridge_mode == cpp_runtime (IndustrialRuntime 存在)")
+	elif has_widget_native:
+		_check(mode == "native_module", "bridge_mode == native_module (widget C++ 类存在)")
+	else:
+		_check(mode == "mock", "bridge_mode == mock (无 C++ 后端)")
+	# native_classes 清单与 has_native() 一致性
+	if mode == "native_module":
+		var nc: Array = bridge.get("native_classes")
+		_check(not nc.is_empty(), "native_classes 非空")
+		_check(nc.has("WidgetFormat"), "native_classes 包含 WidgetFormat")
+		_check(bridge.call("has_native") == true, "has_native() == true")
+	else:
+		_check(bridge.call("has_native") == false, "has_native() == false（非 native_module 档）")
+	# 强制 mock 档：use_mock = true 后重入检测，模式必须切到 mock
+	bridge.set("use_mock", true)
+	bridge.call("_detect_backend")
+	_check(bridge.get("bridge_mode") == "mock", "use_mock=true 后 bridge_mode == mock")
 	bridge.free()
