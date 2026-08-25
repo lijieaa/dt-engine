@@ -1,0 +1,222 @@
+[gd_scene load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://addons/industrial_widgets/demo/demo_controller.gd" id="1_ctrl"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_label.gd" id="2_label"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_num_display.gd" id="3_numdisp"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_num_input.gd" id="4_numin"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_lamp.gd" id="5_lamp"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_switch.gd" id="6_switch"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_meter.gd" id="7_meter"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_bar.gd" id="8_bar"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_gauge.gd" id="9_gauge"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_trend.gd" id="10_trend"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_alarm_list.gd" id="11_alarm"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_recipe.gd" id="12_recipe"]
+[ext_resource type="Script" path="res://addons/industrial_widgets/widgets/tag_macro_button.gd" id="13_macro"]
+
+[sub_resource type="StyleBoxFlat" id="SB_Panel"]
+bg_color = Color(0.08, 0.1, 0.13, 0.96)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="Screen2_WidgetsDemo" type="Control"]
+custom_minimum_size = Vector2(1600, 900)
+layout_mode = 3
+
+[node name="Root" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="HSplit" type="HSplitContainer" parent="Root"]
+layout_mode = 2
+split_offset = 940
+theme_override_constants/separation = 12
+
+[node name="Grid" type="GridContainer" parent="Root/HSplit"]
+columns = 2
+layout_mode = 2
+custom_minimum_size = Vector2(0, 0)
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+
+[node name="LabelPanel" type="PanelContainer" parent="Root/HSplit/Grid"]
+custom_minimum_size = Vector2(0, 120)
+theme_override_styles/panel = SubResource("SB_Panel")
+
+[node name="VBox" type="VBoxContainer" parent="Root/HSplit/Grid/LabelPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Root/HSplit/Grid/LabelPanel/VBox"]
+text = "显示"
+theme_type_variation = "HeaderMedium"
+
+[node name="TagLabel" type="Label" parent="Root/HSplit/Grid/LabelPanel/VBox"]
+custom_minimum_size = Vector2(200, 40)
+script = ExtResource("2_label")
+tag_name = "Pump01.Speed"
+
+[node name="NumPanel" type="PanelContainer" parent="Root/HSplit/Grid"]
+custom_minimum_size = Vector2(0, 120)
+theme_override_styles/panel = SubResource("SB_Panel")
+
+[node name="VBox" type="VBoxContainer" parent="Root/HSplit/Grid/NumPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Root/HSplit/Grid/NumPanel/VBox"]
+text = "输入 / 数字显示"
+theme_type_variation = "HeaderMedium"
+
+[node name="TagNumDisplay" type="Label" parent="Root/HSplit/Grid/NumPanel/VBox"]
+custom_minimum_size = Vector2(200, 36)
+script = ExtResource("3_numdisp")
+tag_name = "Pump01.Speed"
+format_cfg = {"decimals": 1, "thousands": true}
+
+[node name="TagNumInput" type="LineEdit" parent="Root/HSplit/Grid/NumPanel/VBox"]
+custom_minimum_size = Vector2(200, 36)
+script = ExtResource("4_numin")
+tag_name = "Pump01.Speed"
+format_cfg = {"decimals": 1}
+placeholder_text = "输入数值…"
+
+[node name="StatusPanel" type="PanelContainer" parent="Root/HSplit/Grid"]
+custom_minimum_size = Vector2(0, 120)
+theme_override_styles/panel = SubResource("SB_Panel")
+
+[node name="VBox" type="VBoxContainer" parent="Root/HSplit/Grid/StatusPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Root/HSplit/Grid/StatusPanel/VBox"]
+text = "状态"
+theme_type_variation = "HeaderMedium"
+
+[node name="Row" type="HBoxContainer" parent="Root/HSplit/Grid/StatusPanel/VBox"]
+theme_override_constants/separation = 12
+
+[node name="TagLamp" type="Panel" parent="Root/HSplit/Grid/StatusPanel/VBox/Row"]
+custom_minimum_size = Vector2(36, 36)
+script = ExtResource("5_lamp")
+tag_name = "Valve02.Open"
+
+[node name="TagSwitch" type="CheckBox" parent="Root/HSplit/Grid/StatusPanel/VBox/Row"]
+custom_minimum_size = Vector2(160, 36)
+script = ExtResource("6_switch")
+tag_name = "Valve02.Open"
+
+[node name="MeterPanel" type="PanelContainer" parent="Root/HSplit/Grid"]
+custom_minimum_size = Vector2(0, 200)
+theme_override_styles/panel = SubResource("SB_Panel")
+
+[node name="VBox" type="VBoxContainer" parent="Root/HSplit/Grid/MeterPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Root/HSplit/Grid/MeterPanel/VBox"]
+text = "仪表"
+theme_type_variation = "HeaderMedium"
+
+[node name="Row" type="HBoxContainer" parent="Root/HSplit/Grid/MeterPanel/VBox"]
+theme_override_constants/separation = 12
+
+[node name="TagMeter" type="Control" parent="Root/HSplit/Grid/MeterPanel/VBox/Row"]
+custom_minimum_size = Vector2(140, 140)
+script = ExtResource("7_meter")
+tag_name = "Tank01.Level"
+
+[node name="TagBar" type="HSlider" parent="Root/HSplit/Grid/MeterPanel/VBox/Row"]
+custom_minimum_size = Vector2(180, 24)
+script = ExtResource("8_bar")
+tag_name = "Tank01.Level"
+
+[node name="TagGauge" type="ProgressBar" parent="Root/HSplit/Grid/MeterPanel/VBox/Row"]
+custom_minimum_size = Vector2(140, 140)
+script = ExtResource("9_gauge")
+tag_name = "Tank01.Level"
+
+[node name="Right" type="VBoxContainer" parent="Root/HSplit"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 12
+
+[node name="TrendPanel" type="PanelContainer" parent="Root/HSplit/Right"]
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("SB_Panel")
+
+[node name="VBox" type="VBoxContainer" parent="Root/HSplit/Right/TrendPanel"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Root/HSplit/Right/TrendPanel/VBox"]
+text = "趋势"
+theme_type_variation = "HeaderMedium"
+
+[node name="TagTrend" type="Control" parent="Root/HSplit/Right/TrendPanel/VBox"]
+custom_minimum_size = Vector2(0, 220)
+size_flags_vertical = 3
+script = ExtResource("10_trend")
+tag_name = "Tank01.Level"
+
+[node name="AlarmPanel" type="PanelContainer" parent="Root/HSplit/Right"]
+custom_minimum_size = Vector2(0, 160)
+theme_override_styles/panel = SubResource("SB_Panel")
+
+[node name="VBox" type="VBoxContainer" parent="Root/HSplit/Right/AlarmPanel"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Root/HSplit/Right/AlarmPanel/VBox"]
+text = "报警"
+theme_type_variation = "HeaderMedium"
+
+[node name="TagAlarmList" type="ItemList" parent="Root/HSplit/Right/AlarmPanel/VBox"]
+custom_minimum_size = Vector2(0, 100)
+script = ExtResource("11_alarm")
+monitored_tags = PackedStringArray("Tank01.Level", "Pump01.Speed")
+threshold = 500.0
+comparator = "gt"
+debounce_ms = 0
+
+[node name="RecipePanel" type="PanelContainer" parent="Root/HSplit/Right"]
+custom_minimum_size = Vector2(0, 120)
+theme_override_styles/panel = SubResource("SB_Panel")
+
+[node name="VBox" type="VBoxContainer" parent="Root/HSplit/Right/RecipePanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Root/HSplit/Right/RecipePanel/VBox"]
+text = "配方"
+theme_type_variation = "HeaderMedium"
+
+[node name="TagRecipe" type="PanelContainer" parent="Root/HSplit/Right/RecipePanel/VBox"]
+custom_minimum_size = Vector2(0, 60)
+script = ExtResource("12_recipe")
+recipe_cfg = {"entries": [{"name": "R1", "writes": [{"tag": "Pump01.Speed", "value": 900}, {"tag": "Valve02.Open", "value": 1}]}, {"name": "R2", "writes": [{"tag": "Pump01.Speed", "value": 1200}]}]}
+
+[node name="MacroPanel" type="PanelContainer" parent="Root/HSplit/Right"]
+custom_minimum_size = Vector2(0, 110)
+theme_override_styles/panel = SubResource("SB_Panel")
+
+[node name="VBox" type="VBoxContainer" parent="Root/HSplit/Right/MacroPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Root/HSplit/Right/MacroPanel/VBox"]
+text = "宏"
+theme_type_variation = "HeaderMedium"
+
+[node name="TagMacroButton" type="Button" parent="Root/HSplit/Right/MacroPanel/VBox"]
+custom_minimum_size = Vector2(0, 44)
+script = ExtResource("13_macro")
+macro_cfg = {"steps": [{"tag": "Valve02.Open", "value": 1, "delay_ms": 100}, {"tag": "Pump01.Speed", "value": 900, "delay_ms": 200}]}
+
+[node name="DemoController" type="Node" parent="."]
+script = ExtResource("1_ctrl")
