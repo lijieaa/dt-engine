@@ -493,7 +493,7 @@ IndustrialTagData tag_from_dict(const Dictionary &p_td) {
 	tag.unit = dict_get_string(p_td, "unit");
 
 	if (p_td.has("scale")) {
-		Variant scale_v = p_td.get("scale");
+		Variant scale_v = p_td.get("scale", Variant());
 		if (scale_v.get_type() == Variant::DICTIONARY) {
 			tag.scale_obj = scale_v;
 		} else if (scale_v.get_type() == Variant::INT || scale_v.get_type() == Variant::FLOAT) {
@@ -753,7 +753,7 @@ Dictionary industrial_device_param_dict(const IndustrialDeviceData &p_dev) {
 }
 
 void industrial_apply_param_dict_to_device(IndustrialDeviceData &p_dev, const Dictionary &p_params) {
-	Dictionary new_options;
+	Dictionary merged_options = p_dev.options.duplicate(true);
 	Array keys = p_params.keys();
 	for (int i = 0; i < keys.size(); i++) {
 		const String key = keys[i];
@@ -761,9 +761,9 @@ void industrial_apply_param_dict_to_device(IndustrialDeviceData &p_dev, const Di
 		if (industrial_set_device_flat_key(p_dev, key, value)) {
 			continue;
 		}
-		new_options[key] = value;
+		merged_options[key] = value;
 	}
-	p_dev.options = new_options;
+	p_dev.options = merged_options;
 }
 
 void industrial_sync_device_connection_params(IndustrialDeviceData &p_dev) {
