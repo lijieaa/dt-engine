@@ -13,6 +13,7 @@
 #include "core/crypto/crypto_core.h"
 #include "core/io/dir_access.h"
 #include "core/io/file_access.h"
+#include "core/io/json.h"
 #include "editor/editor_node.h"
 #include "editor/editor_interface.h"
 #include "editor/editor_string_names.h"
@@ -114,8 +115,12 @@ void IndustrialEditorPlugin::_notification(int p_what) {
 					}
 				}
 				String proj_id = ensure_industrial_project_id(ps);
-				// Use base_ctrl (already fetched above) as the HTTPRequest owner.
-				IndustrialRuntimeClient::create_project(proj_id, proj_name, base_ctrl);
+				// After runtime registration succeeds, publish nested project JSON.
+				IndustrialRuntimeClient::create_project(
+						proj_id,
+						proj_name,
+						base_ctrl,
+						callable_mp(this, &IndustrialEditorPlugin::_publish_project_to_runtime));
 			}
 
 			// Create and register docks.
@@ -381,6 +386,38 @@ void IndustrialEditorPlugin::_save_project_data() {
 		return;
 	}
 	print_line(vformat("industrial_editor: saved project data %s", absolute_path));
+}
+
+void IndustrialEditorPlugin::_publish_project_to_runtime() {
+	if (project.is_null()) {
+		print_line("industrial_editor: publish skipped — no project");
+		return;
+	}
+
+	Control *base_ctrl = EditorInterface::get_singleton() ? EditorInterface::get_singleton()->get_base_control() : nullptr;
+	if (!base_ctrl) {
+		print_line("industrial_editor: publish skipped — no base control");
+		return;
+	}
+
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	String proj_id = ensure_industrial_project_id(ps);
+	String proj_name = "godot-project";
+	if (ps && ps->has_setting("application/config/name")) {
+		Variant v = ps->get_setting("application/config/name");
+		if (v.get_type() == Variant::STRING) {
+			proj_name = v;
+		}
+	}
+
+	Dictionary payload = project->to_dict();
+	payload["project_id"] = proj_id;
+	payload["project_name"] = proj_name;
+	payload["apply"] = true;
+	const String json = JSON::stringify(payload);
+
+	print_line(vformat("industrial_editor: publishing project to runtime (%d devices)", project->get_device_count()));
+	IndustrialRuntimeClient::import_project(json, base_ctrl);
 }
 
 void IndustrialEditorPlugin::_on_project_changed() {

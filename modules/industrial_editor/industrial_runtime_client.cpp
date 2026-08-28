@@ -29,6 +29,7 @@ PackedStringArray IndustrialRuntimeClient::s_s7_address_types;
 Array IndustrialRuntimeClient::s_s7_address_catalog;
 Array IndustrialRuntimeClient::s_driver_catalog;
 Callable IndustrialRuntimeClient::s_fetch_callback;
+Callable IndustrialRuntimeClient::s_create_project_success_callback;
 
 // --- Bind methods ----------------------------------------------------------
 
@@ -978,7 +979,10 @@ void IndustrialRuntimeClient::_on_tagfield_completed(int p_result, int p_respons
 
 // --- Project creation API (Superpowers workflow entry) ------------------------
 
-void IndustrialRuntimeClient::create_project(const String &p_project_id, const String &p_project_name, Node *p_owner) {
+void IndustrialRuntimeClient::create_project(const String &p_project_id, const String &p_project_name, Node *p_owner,
+		const Callable &p_on_success) {
+	s_create_project_success_callback = p_on_success;
+
 	String base_url = get_runtime_url();
 	HTTPRequest *req = memnew(HTTPRequest);
 	req->set_timeout(10.0);
@@ -995,12 +999,16 @@ void IndustrialRuntimeClient::create_project(const String &p_project_id, const S
 	Error err = req->request(url, PackedStringArray(), HTTPClient::METHOD_POST, body);
 	if (err != OK) {
 		print_line(vformat("industrial_runtime: create_project request failed (%d)", err));
+		s_create_project_success_callback = Callable();
 	}
 }
 
 void IndustrialRuntimeClient::_on_create_project_completed(int p_result, int p_response_code,
 		const PackedStringArray &p_headers, const PackedByteArray &p_body) {
 	(void)p_headers;
+	Callable on_success = s_create_project_success_callback;
+	s_create_project_success_callback = Callable();
+
 	if (p_result != OK) {
 		print_line(vformat("industrial_runtime: create_project failed (result=%d)", p_result));
 		return;
@@ -1012,4 +1020,39 @@ void IndustrialRuntimeClient::_on_create_project_completed(int p_result, int p_r
 	}
 	String body = String::utf8((const char *)p_body.ptr(), p_body.size());
 	print_line(vformat("industrial_runtime: create_project OK: %s", body));
+
+	if (on_success.is_valid()) {
+		on_success.call();
+	}
+}
+
+void IndustrialRuntimeClient::import_project(const String &p_json_body, Node *p_owner) {
+	String base_url = get_runtime_url();
+	HTTPRequest *req = memnew(HTTPRequest);
+	req->set_timeout(30.0);
+	p_owner->add_child(req);
+	req->connect("request_completed", callable_mp_static(&IndustrialRuntimeClient::_on_import_project_completed));
+
+	String url = base_url + "/api/v1/project/import";
+	print_line(vformat("industrial_runtime: POST %s (nested import, %d bytes)", url, p_json_body.length()));
+	Error err = req->request(url, PackedStringArray(), HTTPClient::METHOD_POST, p_json_body);
+	if (err != OK) {
+		print_line(vformat("industrial_runtime: import_project request failed (%d)", err));
+	}
+}
+
+void IndustrialRuntimeClient::_on_import_project_completed(int p_result, int p_response_code,
+		const PackedStringArray &p_headers, const PackedByteArray &p_body) {
+	(void)p_headers;
+	if (p_result != OK) {
+		print_line(vformat("industrial_runtime: import_project failed (result=%d)", p_result));
+		return;
+	}
+	if (p_response_code != 200) {
+		String body = String::utf8((const char *)p_body.ptr(), p_body.size());
+		print_line(vformat("industrial_runtime: import_project HTTP %d body=%s", p_response_code, body));
+		return;
+	}
+	String body = String::utf8((const char *)p_body.ptr(), p_body.size());
+	print_line(vformat("industrial_runtime: import_project OK: %s", body));
 }

@@ -60,6 +60,7 @@ private:
 	void _on_edit_tag_requested(int p_device_index, int p_tag_index);
 	void _load_project_data();
 	void _save_project_data();
+	void _publish_project_to_runtime();
 	String _get_project_data_path() const;
 
 	// Invoked once by IndustrialRuntimeClient after the first async HTTP

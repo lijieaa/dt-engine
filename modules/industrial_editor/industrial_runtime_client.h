@@ -134,7 +134,14 @@ public:
 	/// Sends a POST /api/v1/project to the runtime with only project_id
 	/// and project_name. Used by the Superpowers workflow to register a project.
 	/// The HTTPRequest is attached to p_owner. Logs the result to console.
-	static void create_project(const String &p_project_id, const String &p_project_name, Node *p_owner);
+	/// When p_on_success is valid it is invoked once after HTTP 200.
+	static void create_project(const String &p_project_id, const String &p_project_name, Node *p_owner,
+			const Callable &p_on_success = Callable());
+
+	/// Posts nested project JSON to POST /api/v1/project/import (apply defaults
+	/// true on the backend when omitted). Body is the full import payload
+	/// (devices with tags, optional project_id/name, optional apply).
+	static void import_project(const String &p_json_body, Node *p_owner);
 
 	/// Returns the cached/fallback catalog Dictionary for p_driver_key.
 	/// Top-level keys mirror the backend JSON:
@@ -217,5 +224,10 @@ private:
 
 	static void _on_create_project_completed(int p_result, int p_response_code,
 			const PackedStringArray &p_headers, const PackedByteArray &p_body);
+	static void _on_import_project_completed(int p_result, int p_response_code,
+			const PackedStringArray &p_headers, const PackedByteArray &p_body);
+
+	static Callable s_create_project_success_callback;
+
 	static void _bind_methods();
 };
