@@ -1,7 +1,7 @@
 #include "industrial_device_fields.h"
 
+#include "core/string/ustring.h"
 #include "editor/editor_string_names.h"
-#include "editor/translations/editor_translation.h"
 #include "core/object/callable_mp.h"
 #include "scene/gui/check_button.h"
 #include "scene/gui/label.h"
@@ -22,7 +22,7 @@ bool key_in_list(const String &p_key, const char *const *p_keys, int p_count) {
 
 String label_for_field(const IndustrialFieldDef &p_field, bool p_translate) {
 	if (p_translate) {
-		return atr(p_field.name) + ":";
+		return TTR(p_field.name) + ":";
 	}
 	return p_field.name + ":";
 }
@@ -91,7 +91,7 @@ void industrial_add_param_row(VBoxContainer *p_container, const IndustrialFieldD
 	lbl->set_text(label_for_field(p_field, p_translate_label));
 	lbl->set_custom_minimum_size(Size2(160, 0));
 	if (!p_field.tooltip.is_empty()) {
-		lbl->set_tooltip_text(p_translate_label ? atr(p_field.tooltip) : p_field.tooltip);
+		lbl->set_tooltip_text(p_translate_label ? TTR(p_field.tooltip) : p_field.tooltip);
 	}
 	row->add_child(lbl);
 

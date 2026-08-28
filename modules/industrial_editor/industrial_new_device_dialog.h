@@ -20,7 +20,7 @@ class IndustrialProject;
 // Single-page form for creating a device with optional initial tags.
 // Layout (matches EBPro creation flow, see docs/specs 2026-08-20 §5):
 //   ① Basic Info         (Name, Description, Driver/Protocol)
-//   ② Connection Params  (dynamic per driver schema)
+//   ② §A–§D Connection groups  (Common / Interface / Protocol / Tuning)
 //   ③ Initial Tags       (editable rows with a Skip checkbox)
 // Notes on omitted fields (per user request against EBPro UI):
 //   - "Scan Group"  : an orchestration concept, assigned later in Device Dock.
