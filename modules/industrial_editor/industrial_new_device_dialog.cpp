@@ -1,4 +1,4 @@
-#include "industrial_new_device_dialog.h"
+﻿#include "industrial_new_device_dialog.h"
 #include "industrial_project.h"
 #include "industrial_driver_schema.h"
 #include "industrial_device_fields.h"
@@ -34,7 +34,7 @@ static Label *_make_section_title(const String &p_text) {
 void IndustrialNewDeviceDialog::_build_ui() {
 	// Title (also a msgid).
 	set_title(TTRC("New Device"));
-	set_min_size(Size2(620, 680));
+	set_min_size(Size2(620, 520));
 
 	get_ok_button()->set_text(TTRC("Create Device"));
 	// The dialog is reused for every device creation. A one-shot connection
@@ -46,11 +46,10 @@ void IndustrialNewDeviceDialog::_build_ui() {
 	main->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	add_child(main);
 
-	// ────────────────────────────────────────────────────
-	// ① Basic Info  (Name / Description / Driver/Protocol ONLY —
-	//   Scan Group  → managed in Device Dock after creation.
-	//   Enabled     → EBPro +0xc44 defaults to ENABLED; toggled later.)
-	// ────────────────────────────────────────────────────
+	// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+	// 鈶?Basic Info  (Name / Description / Driver/Protocol ONLY 鈥?	//   Scan Group  鈫?managed in Device Dock after creation.
+	//   Enabled     鈫?EBPro +0xc44 defaults to ENABLED; toggled later.)
+	// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 	main->add_child(_make_section_title(TTRC("Basic Info")));
 
 	basic_section = memnew(VBoxContainer);
@@ -105,18 +104,12 @@ void IndustrialNewDeviceDialog::_build_ui() {
 
 	main->add_child(memnew(HSeparator));
 
-	// ────────────────────────────────────────────────────
-	// §A–§D EBPro-aligned connection groups (dynamic fields)
-	// ────────────────────────────────────────────────────
+	// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+	// 搂A鈥撀 EBPro-aligned connection groups (dynamic fields)
+	// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 	params_section = memnew(VBoxContainer);
 	params_section->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	params_section->add_theme_constant_override("separation", 6);
-
-	params_section->add_child(_make_section_title(TTRC("Common")));
-	common_params_container = memnew(VBoxContainer);
-	common_params_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	common_params_container->add_theme_constant_override("separation", 2);
-	params_section->add_child(common_params_container);
 
 	params_section->add_child(_make_section_title(TTRC("Interface")));
 	interface_params_container = memnew(VBoxContainer);
@@ -138,69 +131,6 @@ void IndustrialNewDeviceDialog::_build_ui() {
 
 	main->add_child(params_section);
 
-	main->add_child(memnew(HSeparator));
-
-	// ────────────────────────────────────────────────────
-	// ③ Initial Tags (optional)
-	// ────────────────────────────────────────────────────
-	main->add_child(_make_section_title(TTRC("Initial Tags (optional)")));
-
-	tags_section = memnew(VBoxContainer);
-	tags_section->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	tags_section->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	tags_section->add_theme_constant_override("separation", 4);
-	main->add_child(tags_section);
-
-	skip_tags = memnew(CheckButton);
-	skip_tags->set_text(TTRC("Skip tag creation (create device only)"));
-	skip_tags->set_pressed(false);
-	skip_tags->connect(SceneStringName(toggled), callable_mp(this, &IndustrialNewDeviceDialog::_on_skip_tags_toggled));
-	tags_section->add_child(skip_tags);
-
-	// Table header.
-	{
-		HBoxContainer *header = memnew(HBoxContainer);
-		header->add_theme_constant_override("separation", 4);
-		Label *l1 = memnew(Label(TTRC("Address Type")));
-		l1->set_custom_minimum_size(Size2(110, 0));
-		header->add_child(l1);
-		Label *l2 = memnew(Label(TTRC("Address")));
-		l2->set_custom_minimum_size(Size2(100, 0));
-		l2->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-		header->add_child(l2);
-		Label *l3 = memnew(Label(TTRC("Name")));
-		l3->set_custom_minimum_size(Size2(120, 0));
-		l3->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-		header->add_child(l3);
-		Label *l4 = memnew(Label(TTRC("Type")));
-		l4->set_custom_minimum_size(Size2(110, 0));
-		header->add_child(l4);
-		Label *l5 = memnew(Label(TTRC("Writable")));
-		l5->set_custom_minimum_size(Size2(70, 0));
-		header->add_child(l5);
-		Label *l6 = memnew(Label(""));
-		l6->set_custom_minimum_size(Size2(40, 0));
-		header->add_child(l6);
-		tags_section->add_child(header);
-	}
-
-	tag_rows_container = memnew(VBoxContainer);
-	tag_rows_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	tag_rows_container->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	tags_section->add_child(tag_rows_container);
-
-	{
-		HBoxContainer *actions = memnew(HBoxContainer);
-		actions->add_theme_constant_override("separation", 10);
-		add_tag_btn = memnew(Button);
-		add_tag_btn->set_text(TTRC("+ Add Tag"));
-		add_tag_btn->connect(SceneStringName(pressed), callable_mp(this, &IndustrialNewDeviceDialog::_add_temp_tag));
-		actions->add_child(add_tag_btn);
-		tags_section->add_child(actions);
-	}
-
-	_add_temp_tag();
-
 	// Populate driver dropdowns (fallback to legacy hardcoded list if the
 	// runtime catalog isn't loaded yet; set_project() + plugin callback will
 	// refresh once the async /api/v1/drivers fetch finishes).
@@ -211,23 +141,15 @@ void IndustrialNewDeviceDialog::set_project(Ref<IndustrialProject> p_project) {
 	project = p_project;
 
 	created_index = -1;
-	temp_tags.clear();
 
-	if (dev_name) dev_name->set_text("");
-	if (dev_desc) dev_desc->set_text("");
-	refresh_protocol_dropdowns();
-	if (skip_tags) skip_tags->set_pressed(false);
-	if (tag_rows_container) {
-		while (tag_rows_container->get_child_count() > 0) {
-			Node *child = tag_rows_container->get_child(0);
-			tag_rows_container->remove_child(child);
-			memdelete(child);
-		}
+	if (dev_name) {
+		dev_name->set_text("");
 	}
-
+	if (dev_desc) {
+		dev_desc->set_text("");
+	}
+	refresh_protocol_dropdowns();
 	_rebuild_params(0);
-	_on_skip_tags_toggled(false);
-	_add_temp_tag();
 }
 
 void IndustrialNewDeviceDialog::refresh_protocol_dropdowns() {
@@ -278,32 +200,30 @@ void IndustrialNewDeviceDialog::refresh_protocol_dropdowns() {
 			driver_idx = (int)dev_device_type->get_item_metadata(dev_device_type->get_selected());
 		}
 		_rebuild_params(MAX(0, driver_idx));
-		// 联动：地址类型目录跟随设备类型，刷新标签行。
 		current_driver_key = _resolve_driver_key(MAX(0, driver_idx));
-		_populate_tag_rows();
 	}
 }
 
-// ── Interface-group helpers ───────────────────────────────────────────────
+// 鈹€鈹€ Interface-group helpers 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 // Maps each backend category_interface value to one of 5 UI groups so the
 // first dropdown only shows 5 broad categories.  When the runtime catalog is
 // not reachable, _populate_interface_types() falls back to a single "All"
 // group containing the legacy 7 hardcoded drivers.
 
 int IndustrialNewDeviceDialog::_interface_to_group(const String &p_iface) const {
-	// Group 0 — Ethernet family (PLCIF=1).
+	// Group 0 鈥?Ethernet family (PLCIF=1).
 	if (p_iface == "ethernet" || p_iface == "ethernet_ip") return 0;
-	// Group 1 — Serial family (PLCIF=0).
+	// Group 1 鈥?Serial family (PLCIF=0).
 	if (p_iface == "serial_rs232c" || p_iface == "serial_rs485" ||
 			p_iface == "df1_fullduplex" || p_iface == "mpi" ||
 			p_iface == "ppi" || p_iface == "usb") return 1;
-	// Group 2 — Bus / fieldbus.
+	// Group 2 鈥?Bus / fieldbus.
 	if (p_iface == "profibus" || p_iface == "ethercat" || p_iface == "can_j1939") return 2;
-	// Group 3 — Vertical industry protocols.
+	// Group 3 鈥?Vertical industry protocols.
 	if (p_iface == "bacnet_mstp" || p_iface == "bacnet_ip" ||
 			p_iface == "iec_104" || p_iface == "iec_101" ||
 			p_iface == "hsms" || p_iface == "secs_i") return 3;
-	// Group 4 — Free / special.
+	// Group 4 鈥?Free / special.
 	if (p_iface == "free") return 4;
 	// Default: drop into Serial group.
 	return 1;
@@ -493,36 +413,19 @@ void IndustrialNewDeviceDialog::_on_interface_changed(int p_idx) {
 }
 
 void IndustrialNewDeviceDialog::_on_device_type_changed(int p_idx) {
-	if (!dev_device_type || p_idx < 0) return;
+	if (!dev_device_type || p_idx < 0) {
+		return;
+	}
 	int driver_idx = (int)dev_device_type->get_item_metadata(p_idx);
 	_rebuild_params(driver_idx);
-	// 联动：地址类型目录跟随设备类型切换，并刷新标签行。
 	current_driver_key = _resolve_driver_key(driver_idx);
-	// 设备类型变了，旧地址类型对新驱动失效——统一重置为新驱动的第一个。
-	PackedStringArray new_ids = IndustrialRuntimeClient::get_address_type_ids(current_driver_key);
-	String default_id = new_ids.size() > 0 ? String(new_ids[0]) : String();
-	for (int i = 0; i < temp_tags.size(); i++) {
-		Dictionary t = temp_tags[i];
-		t["addr_type"] = default_id;
-		temp_tags[i] = t;
-	}
-	// 1) 先用同步 fallback 渲染，保证 UI 不闪空。
-	_populate_tag_rows();
-	// 2) 再异步拉 Go 接口的权威目录，完成后刷新（优先接口数据）。
-	if (!current_driver_key.is_empty()) {
-		Callable cb = callable_mp(this, &IndustrialNewDeviceDialog::_on_tagfield_fetched);
-		IndustrialRuntimeClient::fetch_tag_field_catalog(current_driver_key, this, cb);
-	}
 }
 
 void IndustrialNewDeviceDialog::_on_tagfield_fetched(bool /*p_success*/) {
-	// 异步 fetch 完成后刷新标签行；get_address_type_labels 此时会优先返回
-	// Go 接口缓存的数据（fallback 兜底）。
-	_populate_tag_rows();
+	// Kept for catalog callbacks; initial tags UI removed.
 }
 
-// 解析 driver_idx → driver_key：优先 runtime 目录，失败回退到 81 条目 fallback。
-String IndustrialNewDeviceDialog::_resolve_driver_key(int p_driver_idx) const {
+// 瑙ｆ瀽 driver_idx 鈫?driver_key锛氫紭鍏?runtime 鐩綍锛屽け璐ュ洖閫€鍒?81 鏉＄洰 fallback銆?String IndustrialNewDeviceDialog::_resolve_driver_key(int p_driver_idx) const {
 	String key = IndustrialRuntimeClient::get_driver_key(p_driver_idx);
 	if (key.is_empty()) {
 		key = industrial_get_driver_key(p_driver_idx);
@@ -586,7 +489,6 @@ void IndustrialNewDeviceDialog::_rebuild_params(int p_driver_idx) {
 		}
 	};
 
-	clear_container(common_params_container);
 	clear_container(interface_params_container);
 	clear_container(protocol_params_container);
 	clear_container(tuning_params_container);
@@ -595,8 +497,12 @@ void IndustrialNewDeviceDialog::_rebuild_params(int p_driver_idx) {
 
 	Vector<IndustrialFieldDef> fields = industrial_get_driver_fields(p_driver_idx);
 
+	// Name/driver live in Basic Info; HMI-only EBPro extras stay out of this dialog.
 	static const char *kHiddenKeys[] = {
 		"name",
+		"dev_type",
+		"location_mode",
+		"remote_hmi_ip",
 		"interface_type",
 		"supports_simulator",
 		"enabled",
@@ -635,8 +541,8 @@ void IndustrialNewDeviceDialog::_rebuild_params(int p_driver_idx) {
 		VBoxContainer *target = nullptr;
 		switch (group) {
 			case IND_DEVICE_GROUP_COMMON:
-				target = common_params_container;
-				break;
+				// Basic-info / HMI extras are hidden via kHiddenKeys.
+				continue;
 			case IND_DEVICE_GROUP_INTERFACE:
 				target = interface_params_container;
 				break;
@@ -688,19 +594,22 @@ void IndustrialNewDeviceDialog::_on_confirm_pressed() {
 	} else {
 		dev.driver = 0;
 	}
-	// EBPro §2.1 +0xc44: new devices are ENABLED by default.  If user wants to
+	// EBPro 搂2.1 +0xc44: new devices are ENABLED by default.  If user wants to
 	// disable before first connect, they do so in Device Dock after creation.
 	dev.enabled = true;
 	// Scan Group: left empty on creation; user can assign afterwards via the
 	// Device Dock editor (not part of EBPro's "create device" dialog).
 	dev.scan_group = "";
 
-	// ── Collect UI params → flat fields + options (§3.2) ──
+	// 鈹€鈹€ Collect UI params 鈫?flat fields + options (搂3.2) 鈹€鈹€
 	Dictionary params;
 	_collect_params(params);
 
 	static const char *kHiddenKeys[] = {
 		"name",
+		"dev_type",
+		"location_mode",
+		"remote_hmi_ip",
 		"interface_type",
 		"supports_simulator",
 		"enabled",
@@ -723,173 +632,10 @@ void IndustrialNewDeviceDialog::_on_confirm_pressed() {
 	}
 	created_index = project->get_device_count() - 1;
 
-	if (skip_tags && !skip_tags->is_pressed()) {
-		for (int i = 0; i < temp_tags.size(); i++) {
-			Dictionary tag_dict = temp_tags[i];
-			IndustrialTagData tag;
-			tag.name = tag_dict.get("name", "");
-			// Combine address type + value into full S7 address (e.g. "DBn 0.50")
-			String addr_type = tag_dict.get("addr_type", "DBn");
-			String addr_value = tag_dict.get("addr_value", "");
-			tag.address = addr_type + " " + addr_value;
-			tag.data_type = tag_dict.get("data_type", 0);
-			tag.writable = tag_dict.get("writable", false);
-			tag.scale = tag_dict.get("scale", 1.0);
-			tag.unit = tag_dict.get("unit", "");
-			project->add_tag(created_index, tag);
-		}
-	}
-
 	hide();
 	// AcceptDialog's default ok-button wiring would normally emit "confirmed"
 	// for us, but we call hide() directly above, which short-circuits the AcceptDialog's
 	// accept() flow.  Explicitly fire "confirmed" here so the plugin can
 	// refresh docks and, crucially, so TAG_NEW next click sees the device.
 	call_deferred(SNAME("emit_signal"), SNAME("confirmed"));
-}
-
-void IndustrialNewDeviceDialog::_on_skip_tags_toggled(bool p_pressed) {
-	if (tag_rows_container) {
-		tag_rows_container->set_visible(!p_pressed);
-	}
-}
-
-void IndustrialNewDeviceDialog::_add_temp_tag() {
-	Dictionary tag;
-	tag["name"] = vformat("Tag%d", temp_tags.size() + 1);
-	// 默认地址类型取当前驱动的第一个 id（联动），避免 S7 的 "DBn" 套用到其他协议。
-	PackedStringArray addr_ids = IndustrialRuntimeClient::get_address_type_ids(current_driver_key);
-	tag["addr_type"] = addr_ids.size() > 0 ? String(addr_ids[0]) : String();
-	tag["addr_value"] = "0.50";
-	tag["data_type"] = 1;
-	tag["writable"] = true;
-	tag["scale"] = 1.0;
-	tag["unit"] = "";
-	temp_tags.append(tag);
-	_populate_tag_rows();
-}
-
-void IndustrialNewDeviceDialog::_remove_temp_tag(int p_idx) {
-	if (p_idx >= 0 && p_idx < temp_tags.size()) {
-		temp_tags.remove_at(p_idx);
-		_populate_tag_rows();
-	}
-}
-
-void IndustrialNewDeviceDialog::_populate_tag_rows() {
-	if (!tag_rows_container) return;
-
-	// Free all existing tag rows.
-	while (tag_rows_container->get_child_count() > 0) {
-		Node *child = tag_rows_container->get_child(0);
-		tag_rows_container->remove_child(child);
-		memdelete(child);
-	}
-
-	for (int i = 0; i < temp_tags.size(); i++) {
-		Dictionary tag = temp_tags[i];
-		HBoxContainer *row = memnew(HBoxContainer);
-		row->add_theme_constant_override("separation", 4);
-
-		// Address type dropdown — 跟随当前设备类型（联动）。
-		// 显示用 label（含中文），存储用 id（metadata），保证地址格式正确。
-		OptionButton *addr_type_btn = memnew(OptionButton);
-		PackedStringArray addr_labels = IndustrialRuntimeClient::get_address_type_labels(current_driver_key);
-		PackedStringArray addr_ids = IndustrialRuntimeClient::get_address_type_ids(current_driver_key);
-		for (int t = 0; t < addr_labels.size(); t++) {
-			addr_type_btn->add_item(addr_labels[t]);
-			if (t < addr_ids.size()) {
-				addr_type_btn->set_item_metadata(t, addr_ids[t]);
-			}
-		}
-		String addr_type = tag.get("addr_type", "");
-		for (int t = 0; t < addr_ids.size(); t++) {
-			if (addr_ids[t] == addr_type) {
-				addr_type_btn->select(t);
-				break;
-			}
-		}
-		addr_type_btn->set_custom_minimum_size(Size2(110, 24));
-		addr_type_btn->connect(SceneStringName(item_selected), callable_mp(this, &IndustrialNewDeviceDialog::_on_temp_tag_addr_type_changed).bind(i));
-		row->add_child(addr_type_btn);
-
-		LineEdit *addr_edit = memnew(LineEdit);
-		addr_edit->set_text(tag.get("addr_value", ""));
-		addr_edit->set_custom_minimum_size(Size2(100, 24));
-		addr_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-		addr_edit->connect(SceneStringName(text_changed), callable_mp(this, &IndustrialNewDeviceDialog::_on_temp_tag_addr_value_changed).bind(i));
-		row->add_child(addr_edit);
-
-		LineEdit *name_edit = memnew(LineEdit);
-		name_edit->set_text(tag.get("name", ""));
-		name_edit->set_custom_minimum_size(Size2(140, 24));
-		name_edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-		name_edit->connect(SceneStringName(text_changed), callable_mp(this, &IndustrialNewDeviceDialog::_on_temp_tag_name_changed).bind(i));
-		row->add_child(name_edit);
-
-		OptionButton *type_btn = memnew(OptionButton);
-		StringList types = industrial_get_data_type_names();
-		for (int t = 0; t < types.size(); t++) {
-			type_btn->add_item(types[t]);
-		}
-		int dtype = tag.get("data_type", 0);
-		if (dtype >= 0 && dtype < types.size()) {
-			type_btn->select(dtype);
-		}
-		type_btn->set_custom_minimum_size(Size2(110, 24));
-		type_btn->connect(SceneStringName(item_selected), callable_mp(this, &IndustrialNewDeviceDialog::_on_temp_tag_type_changed).bind(i));
-		row->add_child(type_btn);
-
-		CheckButton *write_cb = memnew(CheckButton);
-		write_cb->set_pressed(tag.get("writable", false));
-		write_cb->connect(SceneStringName(toggled), callable_mp(this, &IndustrialNewDeviceDialog::_on_temp_tag_writable_changed).bind(i));
-		row->add_child(write_cb);
-
-		Button *del_btn = memnew(Button);
-		del_btn->set_text("X");
-		del_btn->set_custom_minimum_size(Size2(40, 0));
-		del_btn->connect(SceneStringName(pressed), callable_mp(this, &IndustrialNewDeviceDialog::_remove_temp_tag).bind(i));
-		row->add_child(del_btn);
-
-		tag_rows_container->add_child(row);
-	}
-}
-
-void IndustrialNewDeviceDialog::_on_temp_tag_addr_value_changed(int p_idx, const String &p_text) {
-	if (p_idx < 0 || p_idx >= temp_tags.size()) return;
-	Dictionary tag = temp_tags[p_idx];
-	tag["addr_value"] = p_text;
-	temp_tags[p_idx] = tag;
-}
-
-void IndustrialNewDeviceDialog::_on_temp_tag_addr_type_changed(int p_idx, int p_type_idx) {
-	if (p_idx < 0 || p_idx >= temp_tags.size()) return;
-	Dictionary tag = temp_tags[p_idx];
-	// 存储用纯 id（与显示 label 的索引对齐）。
-	PackedStringArray ids = IndustrialRuntimeClient::get_address_type_ids(current_driver_key);
-	if (p_type_idx >= 0 && p_type_idx < ids.size()) {
-		tag["addr_type"] = ids[p_type_idx];
-	}
-	temp_tags[p_idx] = tag;
-}
-
-void IndustrialNewDeviceDialog::_on_temp_tag_name_changed(int p_idx, const String &p_text) {
-	if (p_idx < 0 || p_idx >= temp_tags.size()) return;
-	Dictionary tag = temp_tags[p_idx];
-	tag["name"] = p_text;
-	temp_tags[p_idx] = tag;
-}
-
-void IndustrialNewDeviceDialog::_on_temp_tag_type_changed(int p_idx, int p_type_idx) {
-	if (p_idx < 0 || p_idx >= temp_tags.size()) return;
-	Dictionary tag = temp_tags[p_idx];
-	tag["data_type"] = p_type_idx;
-	temp_tags[p_idx] = tag;
-}
-
-void IndustrialNewDeviceDialog::_on_temp_tag_writable_changed(int p_idx, bool p_pressed) {
-	if (p_idx < 0 || p_idx >= temp_tags.size()) return;
-	Dictionary tag = temp_tags[p_idx];
-	tag["writable"] = p_pressed;
-	temp_tags[p_idx] = tag;
 }

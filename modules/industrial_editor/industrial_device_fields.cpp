@@ -134,7 +134,9 @@ void industrial_add_param_row(VBoxContainer *p_container, const IndustrialFieldD
 		case 4: { // choice
 			OptionButton *ob = memnew(OptionButton);
 			for (int ci = 0; ci < p_field.choices.size(); ci++) {
-				ob->add_item(p_field.choices[ci]);
+				const String choice = p_field.choices[ci];
+				ob->add_item(p_translate_label ? TTR(choice) : choice);
+				ob->set_item_metadata(ci, choice); // wire value stays English/catalog id
 			}
 			const String current_val = initial;
 			for (int ci = 0; ci < p_field.choices.size(); ci++) {
@@ -182,6 +184,10 @@ Variant industrial_read_param_widget(Control *p_widget, int p_data_type) {
 		case 4:
 			if (OptionButton *ob = Object::cast_to<OptionButton>(p_widget)) {
 				if (ob->get_selected() >= 0) {
+					const Variant meta = ob->get_item_metadata(ob->get_selected());
+					if (meta.get_type() == Variant::STRING) {
+						return meta;
+					}
 					return ob->get_item_text(ob->get_selected());
 				}
 				return String();

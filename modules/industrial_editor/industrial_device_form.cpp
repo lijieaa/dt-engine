@@ -111,20 +111,12 @@ void IndustrialDeviceForm::_build_ui() {
 
 	add_child(memnew(HSeparator));
 
-	// ── §A–§D connection groups ──
+	// ── §B–§D connection groups (Common HMI extras hidden) ──
 	label_conn_params = memnew(Label);
 	label_conn_params->set_text(TTR("Connection"));
 	label_conn_params->add_theme_font_size_override("font_size", 14);
 	label_conn_params->add_theme_color_override("font_color", Color(0.6, 0.8, 1.0));
 	add_child(label_conn_params);
-
-	label_common = memnew(Label);
-	label_common->set_text(TTR("Common"));
-	label_common->add_theme_font_size_override("font_size", 12);
-	add_child(label_common);
-	common_params_container = memnew(VBoxContainer);
-	common_params_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	add_child(common_params_container);
 
 	label_interface = memnew(Label);
 	label_interface->set_text(TTR("Interface"));
@@ -149,52 +141,6 @@ void IndustrialDeviceForm::_build_ui() {
 	tuning_params_container = memnew(VBoxContainer);
 	tuning_params_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	add_child(tuning_params_container);
-
-	add_child(memnew(HSeparator));
-
-	// ── Tags section ──
-	label_tags = memnew(Label);
-	label_tags->set_text(TTR("Tags"));
-	label_tags->add_theme_font_size_override("font_size", 14);
-	label_tags->add_theme_color_override("font_color", Color(0.6, 0.8, 1.0));
-	add_child(label_tags);
-
-	// Tag table (embedded).
-	tag_table_container = memnew(VBoxContainer);
-	tag_table_container->set_custom_minimum_size(Size2(0, 150));
-	tag_table_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	add_child(tag_table_container);
-
-	// Add tag button.
-	{
-		HBoxContainer *btn_row = memnew(HBoxContainer);
-		Button *add_btn = memnew(Button);
-		add_btn->set_text(TTR("+ Add Tag"));
-		add_btn->connect(SceneStringName(pressed), callable_mp(this, &IndustrialDeviceForm::add_empty_tag));
-		btn_row->add_child(add_btn);
-
-		Button *batch_btn = memnew(Button);
-		batch_btn->set_text(TTR("Batch Generate..."));
-		batch_btn->connect(SceneStringName(pressed), callable_mp(this, &IndustrialDeviceForm::_add_tag_row));
-		btn_row->add_child(batch_btn);
-
-		add_child(btn_row);
-	}
-
-	add_child(memnew(HSeparator));
-
-	// ── Selected tag detail ──
-	label_selected_tag = memnew(Label);
-	label_selected_tag->set_text(TTR("Selected Tag"));
-	label_selected_tag->add_theme_font_size_override("font_size", 14);
-	label_selected_tag->add_theme_color_override("font_color", Color(0.6, 0.8, 1.0));
-	label_selected_tag->hide();
-	add_child(label_selected_tag);
-
-	tag_detail_container = memnew(VBoxContainer);
-	tag_detail_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	tag_detail_container->hide();
-	add_child(tag_detail_container);
 }
 
 void IndustrialDeviceForm::set_project(Ref<IndustrialProject> p_project) {
@@ -352,7 +298,6 @@ void IndustrialDeviceForm::_clear_dynamic_params() {
 			p_container->remove_child(p_container->get_child(0));
 		}
 	};
-	clear_container(common_params_container);
 	clear_container(interface_params_container);
 	clear_container(protocol_params_container);
 	clear_container(tuning_params_container);
@@ -420,6 +365,9 @@ void IndustrialDeviceForm::_populate_dynamic_params(int p_driver, const Dictiona
 
 	static const char *kHiddenKeys[] = {
 		"name",
+		"dev_type",
+		"location_mode",
+		"remote_hmi_ip",
 		"interface_type",
 		"supports_simulator",
 		"enabled",
@@ -455,8 +403,7 @@ void IndustrialDeviceForm::_populate_dynamic_params(int p_driver, const Dictiona
 		VBoxContainer *target = nullptr;
 		switch (group) {
 			case IND_DEVICE_GROUP_COMMON:
-				target = common_params_container;
-				break;
+				continue;
 			case IND_DEVICE_GROUP_INTERFACE:
 				target = interface_params_container;
 				break;
@@ -473,7 +420,7 @@ void IndustrialDeviceForm::_populate_dynamic_params(int p_driver, const Dictiona
 
 		const Variant current = p_params.has(field.key) ? p_params[field.key] : Variant();
 		const int before = target->get_child_count();
-		industrial_add_param_row(target, field, current, widgets, false);
+		industrial_add_param_row(target, field, current, widgets, true);
 
 		if (!widgets.has(field.key)) {
 			continue;
@@ -693,6 +640,9 @@ void IndustrialDeviceForm::_on_tag_selected(int p_tag_index) {
 }
 
 void IndustrialDeviceForm::_update_tag_detail(int p_tag_index) {
+	if (!label_selected_tag || !tag_detail_container) {
+		return;
+	}
 	if (device_index < 0 || project.is_null()) {
 		label_selected_tag->hide();
 		tag_detail_container->hide();

@@ -46,19 +46,17 @@ private:
 	OptionButton *field_scan_group = nullptr;
 	CheckButton *field_enabled = nullptr;
 
-	Label *label_common = nullptr;
 	Label *label_interface = nullptr;
 	Label *label_protocol = nullptr;
 	Label *label_tuning = nullptr;
 
-	// Dynamic connection params — §B–§D (+ common extras beyond Device Info).
-	VBoxContainer *common_params_container = nullptr;
+	// Dynamic connection params — Interface / Protocol / Tuning.
 	VBoxContainer *interface_params_container = nullptr;
 	VBoxContainer *protocol_params_container = nullptr;
 	VBoxContainer *tuning_params_container = nullptr;
 	Control *remote_hmi_row = nullptr;
 
-	// Tag table container.
+	// Tag table container (optional; tags managed in Tag Dock).
 	VBoxContainer *tag_table_container = nullptr;
 
 	// Selected tag detail form.

@@ -22274,3 +22274,825 @@ msgstr ""
 "正在尝试将模型空间的顶点位置 VERTEX 赋值给裁剪空间的顶点位置 POSITION。4.3 版"
 "本修改了裁剪空间的定义，因此如果这段代码是在 4.3 之前编写的，就会无法继续工"
 "作。请考虑直接指定裁剪空间的 Z 分量，即使用 `vec4(VERTEX.xy, 1.0, 1.0)`。"
+
+# Industrial Editor �?Device & Tags menu shortcuts.
+msgid "New Device"
+msgstr "新建设备..."
+
+msgid "Edit Device"
+msgstr "编辑选中设备"
+
+msgid "Delete Device"
+msgstr "删除选中设备"
+
+msgid "Duplicate Device"
+msgstr "复制设备..."
+
+msgid "Diagnose Device"
+msgstr "设备诊断"
+
+msgid "Move Device to Scan Group"
+msgstr "移动到扫描组..."
+
+msgid "Import Devices from CSV"
+msgstr "�?CSV 导入设备..."
+
+msgid "Export Devices to CSV"
+msgstr "导出设备清单 CSV"
+
+msgid "New Tag"
+msgstr "新建标签..."
+
+msgid "Edit Tag"
+msgstr "编辑选中标签"
+
+msgid "Delete Tag"
+msgstr "删除选中标签"
+
+msgid "Batch Generate Tags"
+msgstr "批量生成标签..."
+
+msgid "Open Tag Browser"
+msgstr "标签浏览�?
+
+msgid "Export Tags to CSV"
+msgstr "导出标签 CSV"
+
+# Industrial Driver Schema - Common Fields
+msgid "Poll Interval (ms)"
+msgstr "采集周期 (ms)"
+
+msgid "Poll Interval"
+msgstr "采集周期"
+
+msgid "Timeout (ms)"
+msgstr "超时 (ms)"
+
+msgid "Request Timeout"
+msgstr "请求超时"
+
+msgid "Retries"
+msgstr "重试次数"
+
+msgid "Retry Count on Failure"
+msgstr "失败重试次数"
+
+# Industrial Driver Schema - Siemens S7 Fields
+msgid "Interface Type"
+msgstr "接口类型"
+
+msgid "Ethernet"
+msgstr "以太�?
+
+msgid "MPI"
+msgstr "MPI (多点接口)"
+
+msgid "PROFIBUS"
+msgstr "PROFIBUS 现场总线"
+
+msgid "PG"
+msgstr "PG (编程设备)"
+
+msgid "OP/HMI"
+msgstr "OP/HMI (人机界面)"
+
+msgid "S7 Basic"
+msgstr "S7 Basic (基础连接)"
+
+msgid "IP Address"
+msgstr "IP 地址"
+
+msgid "Port"
+msgstr "端口"
+
+msgid "RFC1006 Default Port 102"
+msgstr "RFC1006 默认端口 102"
+
+msgid "Rack"
+msgstr "机架"
+
+msgid "S7 CPU Rack, Usually 0"
+msgstr "S7 CPU 所在机架，通常�?0"
+
+msgid "Slot"
+msgstr "槽位"
+
+msgid "S7-1500=1; S7-1200 CPU=0/1; Check Manual for Comm Module"
+msgstr "S7-1500=1；S7-1200 CPU=0/1；通信模块需查手�?
+
+msgid "Connection Type (TSAP)"
+msgstr "连接类型 (TSAP)"
+
+msgid "TIA Portal: Enable PUT/GET Communication for S7 Basic"
+msgstr "TIA Portal 需勾选「允�?PUT/GET 通信」才可使�?S7 Basic"
+
+msgid "Max Read Words"
+msgstr "最大读字数"
+
+msgid "Single S7 Read PDU Limit; Auto-Split if Exceeded"
+msgstr "单次 S7 Read �?PDU 上限；超上限自动分包"
+
+msgid "Max Write Words"
+msgstr "最大写字数"
+
+# Industrial Driver Schema - Modbus RTU Fields
+msgid "Serial Port"
+msgstr "串口�?
+
+msgid "Baud Rate"
+msgstr "波特�?
+
+msgid "Data Bits"
+msgstr "数据�?
+
+msgid "Stop Bits"
+msgstr "停止�?
+
+msgid "Parity"
+msgstr "校验�?
+
+msgid "Even"
+msgstr "偶校�?
+
+msgid "Odd"
+msgstr "奇校�?
+
+msgid "Slave ID"
+msgstr "站号"
+
+# Industrial Driver Schema - BACnet Fields
+msgid "MAC Address"
+msgstr "MAC 地址"
+
+msgid "Network Number"
+msgstr "网络�?
+
+msgid "Device ID"
+msgstr "设备 ID"
+
+# Industrial Driver Schema - SECS GEM Fields
+msgid "Mode"
+msgstr "模式"
+
+msgid "Passive"
+msgstr "被动"
+
+msgid "Active"
+msgstr "主动 (Active)"
+
+msgid "T3 Timeout (ms)"
+msgstr "T3 超时 (ms)"
+
+msgid "T5 Timeout (ms)"
+msgstr "T5 超时 (ms)"
+
+# Industrial Driver Schema - Mitsubishi FX Fields
+msgid "Interface"
+msgstr "接口"
+
+# Industrial Driver Schema - OMRON FINS Fields
+msgid "Comm Mode"
+msgstr "通信方式"
+
+msgid "RS-232C"
+msgstr "RS-232C 串口"
+
+msgid "Node Address"
+msgstr "节点地址"
+
+# Industrial New Device Dialog - UI Labels
+msgid "Basic Info"
+msgstr "�?基本信息"
+
+msgid "Connection Parameters"
+msgstr "�?连接参数"
+
+msgid "Initial Tags (optional)"
+msgstr "�?初始标签（可选）"
+
+msgid "Create Device"
+msgstr "创建设备"
+
+msgid "device name, e.g. S7_Line01_CPU"
+msgstr "设备名称，例�?S7_Line01_CPU"
+
+msgid "(optional)"
+msgstr "（可选）"
+
+msgid "Driver/Protocol:"
+msgstr "驱动/协议�?
+
+msgid "Skip tag creation (create device only)"
+msgstr "跳过标签创建（仅创建设备�?
+
+msgid "Address"
+msgstr "地址"
+
+msgid "Writable"
+msgstr "可写"
+
+msgid "+ Add Tag"
+msgstr "+ 添加标签"
+
+# Industrial Tag Table
+msgid "Address Type"
+msgstr "地址类型"
+
+# Industrial New Tag Dialog
+msgid "Address:"
+msgstr "地址�?
+
+msgid "Data Type:"
+msgstr "数据类型�?
+
+msgid "Unit:"
+msgstr "单位�?
+
+msgid "e.g. degC, kPa"
+msgstr "例如 ℃、kPa"
+
+# Industrial Batch Gen Dialog
+msgid "Batch Generate..."
+msgstr "批量生成..."
+
+msgid "Base Address:"
+msgstr "基地址�?
+
+msgid "Count:"
+msgstr "数量�?
+
+msgid "Name Pattern:"
+msgstr "名称模板�?
+
+msgid "Use @INDEX@ as 0-based index placeholder."
+msgstr "使用 @INDEX@ 作为�?0 开始的索引占位符�?
+
+msgid "Preview: (enter base address)"
+msgstr "预览：（输入基地址�?
+
+msgid "Preview (%d tags):"
+msgstr "预览�?d 个标签）�?
+
+msgid "S7 example: DB1.DBW0"
+msgstr "S7 示例：DB1.DBW0"
+
+# Industrial Device Dock
+msgid "Device Management"
+msgstr "设备管理"
+
+msgid "Device Properties"
+msgstr "设备属�?
+
+msgid "+ New"
+msgstr "+ 新建"
+
+msgid "Search devices..."
+msgstr "搜索设备..."
+
+msgid "Flat"
+msgstr "平铺"
+
+msgid "By Driver"
+msgstr "按驱�?
+
+msgid "By Group"
+msgstr "按分�?
+
+msgid "Driver / Vendor"
+msgstr "驱动 / 厂商"
+
+msgid "No devices yet. Click + to create one."
+msgstr "暂无设备。点�?+ 新建�?
+
+msgid "+ Tag"
+msgstr "+ 标签"
+
+msgid "Select a device to view its tags."
+msgstr "选择设备以查看其标签�?
+
+msgid "No tags for this device."
+msgstr "此设备暂无标签�?
+
+msgid "Tags: %s"
+msgstr "标签�?s"
+
+msgid "Move to Group..."
+msgstr "移动到分�?.."
+
+msgid "Diagnose"
+msgstr "诊断"
+
+msgid "Ungrouped"
+msgstr "未分�?
+
+msgid "Driver / Status"
+msgstr "驱动/状�?
+
+# Industrial Tag Dock
+msgid "Search tags..."
+msgstr "搜索标签..."
+
+msgid "All Types"
+msgstr "所有类�?
+
+# Industrial Device Form
+msgid "Device Info"
+msgstr "设备信息"
+
+msgid "Driver:"
+msgstr "驱动�?
+
+msgid "Scan Group:"
+msgstr "扫描组："
+
+msgid "Selected Tag"
+msgstr "已选标�?
+
+
+msgid "Interface Type:"
+msgstr "接口类型�?
+
+msgid "Device Type:"
+msgstr "设备类型�?
+
+msgid "Serial"
+msgstr "串口"
+
+msgid "Bus"
+msgstr "总线"
+
+msgid "Industry"
+msgstr "垂直行业"
+
+msgid "Special"
+msgstr "特殊"
+
+msgid "Absolute Addressing"
+msgstr "绝对地址寻址"
+
+msgid "Symbolic Addressing"
+msgstr "符号寻址"
+
+msgid "EtherNet/IP"
+msgstr "EtherNet/IP"
+
+msgid "RS-485"
+msgstr "RS-485"
+
+msgid "PPI"
+msgstr "PPI"
+
+msgid "PROFIBUS DP"
+msgstr "PROFIBUS DP"
+
+msgid "USB"
+msgstr "USB"
+
+msgid "DF1 Full-Duplex"
+msgstr "DF1 全双�?
+
+msgid "CANbus J1939"
+msgstr "CANbus J1939"
+
+msgid "BACnet MSTP"
+msgstr "BACnet MS/TP"
+
+msgid "BACnet/IP"
+msgstr "BACnet/IP"
+
+msgid "IEC 104"
+msgstr "IEC 60870-5-104"
+
+msgid "IEC 101"
+msgstr "IEC 60870-5-101"
+
+msgid "HSMS"
+msgstr "HSMS"
+
+msgid "SECS-I"
+msgstr "SECS-I"
+
+msgid "EtherCAT"
+msgstr "EtherCAT"
+
+msgid "Free Protocol"
+msgstr "自由协议"
+
+msgid "AMS Net ID"
+msgstr "AMS Net ID"
+
+msgid "AMS Port"
+msgstr "AMS 端口"
+
+msgid "App Timeout (ms)"
+msgstr "应用超时 (ms)"
+
+msgid "Balanced Mode"
+msgstr "平衡模式"
+
+msgid "BBMD IP"
+msgstr "BBMD IP"
+
+msgid "BBMD Port"
+msgstr "BBMD 端口"
+
+msgid "Block Interval (words)"
+msgstr "块间�?(�?"
+
+msgid "CAN Interface"
+msgstr "CAN 接口"
+
+msgid "Class 0 Poll Interval (ms)"
+msgstr "Class 0 轮询间隔 (ms)"
+
+msgid "Common Address (CA)"
+msgstr "公共地址 (CA)"
+
+msgid "Common Address Size"
+msgstr "公共地址长度"
+
+msgid "Connection Class"
+msgstr "连接等级"
+
+msgid "Connection Type"
+msgstr "连接类型"
+
+msgid "COT Size"
+msgstr "COT 长度"
+
+msgid "CPU Type"
+msgstr "CPU 型号"
+
+msgid "CRC Mode"
+msgstr "CRC 模式"
+
+msgid "Default Function Code"
+msgstr "默认功能�?
+
+msgid "Destination Address"
+msgstr "目标地址"
+
+msgid "Device Name"
+msgstr "设备名称"
+
+msgid "DF1 ACK Timeout (ms)"
+msgstr "DF1 ACK 超时 (ms)"
+
+msgid "DF1 Packet Mode"
+msgstr "DF1 包模�?
+
+msgid "DF1 Station"
+msgstr "DF1 站号"
+
+msgid "Distributed Clocks"
+msgstr "分布式时�?
+
+msgid "Encapsulation Port"
+msgstr "封装端口"
+
+msgid "ENII IP"
+msgstr "ENII IP"
+
+msgid "FCS Enabled"
+msgstr "启用 FCS"
+
+msgid "FINS Protocol"
+msgstr "FINS 协议"
+
+msgid "Flow Control"
+msgstr "流控"
+
+msgid "Foreign Device TTL (sec)"
+msgstr "外部设备 TTL (�?"
+
+msgid "Frame Delimiter"
+msgstr "帧分隔符"
+
+msgid "Frame End"
+msgstr "帧尾"
+
+msgid "Frame Format"
+msgstr "帧格�?
+
+msgid "Frame Start"
+msgstr "帧头"
+
+msgid "GX Works3 Project File"
+msgstr "GX Works3 工程文件"
+
+msgid "High Station Address (HSA)"
+msgstr "高站号地址 (HSA)"
+
+msgid "Hollysys Project File"
+msgstr "和利时工程文�?
+
+msgid "HostLink Frame"
+msgstr "HostLink �?
+
+msgid "I-Am Response Enabled"
+msgstr "启用 I-Am 响应"
+
+msgid "Inverter Model"
+msgstr "变频器型�?
+
+msgid "IO Block Mode"
+msgstr "IO 块模�?
+
+msgid "IO ID"
+msgstr "IO ID"
+
+msgid "IOA Size"
+msgstr "IOA 长度"
+
+msgid "ISO-on-TCP Mode"
+msgstr "ISO-on-TCP 模式"
+
+msgid "J1939 Name (64-bit)"
+msgstr "J1939 名称 (64�?"
+
+msgid "K Factor"
+msgstr "K 系数"
+
+msgid "KV CPU Model"
+msgstr "KV CPU 型号"
+
+msgid "Link Layer Address"
+msgstr "链路层地址"
+
+msgid "Link Timeout (ms)"
+msgstr "链路超时 (ms)"
+
+msgid "Linktest Interval (ms)"
+msgstr "链路测试间隔 (ms)"
+
+msgid "Listen Mode"
+msgstr "监听模式"
+
+msgid "Local Port (Listen)"
+msgstr "本地端口 (监听)"
+
+msgid "Location"
+msgstr "位置"
+
+msgid "Max Master"
+msgstr "最大主站号"
+
+msgid "Max PGN"
+msgstr "最�?PGN"
+
+msgid "MEWTOCOL Station"
+msgstr "MEWTOCOL 站号"
+
+msgid "Model"
+msgstr "型号"
+
+msgid "Module ID"
+msgstr "模块 ID"
+
+msgid "Module Type"
+msgstr "模块类型"
+
+msgid "MPI Baud Rate"
+msgstr "MPI 波特�?
+
+msgid "MPI Master Address"
+msgstr "MPI 主站地址"
+
+msgid "Network No."
+msgstr "网络�?
+
+msgid "Nova Project File"
+msgstr "Nova 工程文件"
+
+msgid "Originator Address (OA)"
+msgstr "源地址 (OA)"
+
+msgid "PC No."
+msgstr "PC 编号"
+
+msgid "PDO Cycle (ms)"
+msgstr "PDO 周期 (ms)"
+
+msgid "PGN Filter List"
+msgstr "PGN 过滤列表"
+
+msgid "PLC Model"
+msgstr "PLC 型号"
+
+msgid "PPI Mode"
+msgstr "PPI 模式"
+
+msgid "Process Data Image (bytes)"
+msgstr "过程数据镜像 (字节)"
+
+msgid "ProCon Node"
+msgstr "ProCon 节点"
+
+msgid "PROFIBUS Address"
+msgstr "PROFIBUS 地址"
+
+msgid "PROFIBUS Baud Rate"
+msgstr "PROFIBUS 波特�?
+
+msgid "Protocol"
+msgstr "协议"
+
+msgid "QnA Series"
+msgstr "QnA 系列"
+
+msgid "Register Base"
+msgstr "寄存器基址"
+
+msgid "Register Profile"
+msgstr "寄存器配�?
+
+msgid "Remote HMI IP"
+msgstr "远程 HMI IP"
+
+msgid "Remote IP"
+msgstr "远程 IP"
+
+msgid "Remote Port"
+msgstr "远程端口"
+
+msgid "Response Format"
+msgstr "响应格式"
+
+msgid "ROC Protocol Version"
+msgstr "ROC 协议版本"
+
+msgid "RPI (ms)"
+msgstr "RPI (ms)"
+
+msgid "Scanner IP"
+msgstr "扫描�?IP"
+
+msgid "SDO Timeout (ms)"
+msgstr "SDO 超时 (ms)"
+
+msgid "Send Frame Template"
+msgstr "发送帧模板"
+
+msgid "Sensor Model"
+msgstr "传感器型�?
+
+msgid "Series"
+msgstr "系列"
+
+msgid "Service ID"
+msgstr "服务 ID"
+
+msgid "Servo Register Profile"
+msgstr "伺服寄存器配�?
+
+msgid "Slave Count"
+msgstr "从站数量"
+
+msgid "Source Address"
+msgstr "源地址"
+
+msgid "Source Address (SA)"
+msgstr "源地址 (SA)"
+
+msgid "Station ID"
+msgstr "站号 ID"
+
+msgid "Station No."
+msgstr "站号"
+
+msgid "Supports Simulator"
+msgstr "支持仿真"
+
+msgid "Symbol Instance ID"
+msgstr "符号实例 ID"
+
+msgid "T0 Timeout (ms)"
+msgstr "T0 超时 (ms)"
+
+msgid "T1 Timeout (ms)"
+msgstr "T1 超时 (ms)"
+
+msgid "T2 Timeout (ms)"
+msgstr "T2 超时 (ms)"
+
+msgid "T6 Timeout (ms)"
+msgstr "T6 超时 (ms)"
+
+msgid "T7 Timeout (ms)"
+msgstr "T7 超时 (ms)"
+
+msgid "T8 Timeout (ms)"
+msgstr "T8 超时 (ms)"
+
+msgid "Tag Import"
+msgstr "标签导入"
+
+msgid "Tag Namespace"
+msgstr "标签命名空间"
+
+msgid "Target Net ID"
+msgstr "目标 Net ID"
+
+msgid "Target Port"
+msgstr "目标端口"
+
+msgid "TMC Project File"
+msgstr "TMC 工程文件"
+
+msgid "Tn Max (Info Frames Timeout)"
+msgstr "Tn Max (信息帧超�?"
+
+msgid "Toolbus Unit"
+msgstr "Toolbus 单元"
+
+msgid "Transport"
+msgstr "传输方式"
+
+msgid "Turbine ID"
+msgstr "涡轮�?ID"
+
+msgid "UDP Port"
+msgstr "UDP 端口"
+
+msgid "Unipro Node"
+msgstr "Unipro 节点"
+
+msgid "Unipro Segment"
+msgstr "Unipro �?
+
+msgid "Unit Address"
+msgstr "单元地址"
+
+msgid "Unity Pro Project File"
+msgstr "Unity Pro 工程文件"
+
+msgid "Use UDP (User Datagram Protocol)"
+msgstr "启用 UDP (用户数据报协�?"
+
+msgid "W Factor"
+msgstr "W 系数"
+
+msgid "Who-Is Interval (ms)"
+msgstr "Who-Is 间隔 (ms)"
+
+msgid "Wire Numbering"
+msgstr "线号编号"
+
+
+msgid "0 = auto-assign; required for server mode"
+msgstr "0 = 自动分配；服务器模式必填"
+
+msgid "76800 requires OS version 20160824 or later"
+msgstr "76800 需要操作系统版�?20160824 或更�?
+
+msgid "Address block interval"
+msgstr "地址块间�?
+
+msgid "INPORT/OUTPORT macro script"
+msgstr "INPORT/OUTPORT 宏脚�?
+
+msgid "Poll Interval"
+msgstr "轮询间隔"
+
+msgid "Receive packet delimiter (hex \\x1E or ASCII \\r\\n)"
+msgstr "接收包分隔符 (十六进制 \\x1E �?ASCII \\r\\n)"
+
+msgid "Request Timeout"
+msgstr "请求超时"
+
+msgid "Required, max 60 chars"
+msgstr "必填，最�?60 字符"
+
+msgid "Retry Count on Failure"
+msgstr "失败时重试次�?
+
+msgid "RFC1006 Default Port 102"
+msgstr "RFC1006 默认端口 102"
+
+msgid "S7 CPU Rack, Usually 0"
+msgstr "S7 CPU 机架，通常�?0"
+
+msgid "S7-1500=1; S7-1200 CPU=0/1; Check Manual for Comm Module"
+msgstr "S7-1500=1；S7-1200 CPU=0/1；请查阅通讯模块手册"
+
+msgid "Single read block limit; auto-split if exceeded"
+msgstr "单次读取块上限；超过自动分割"
+
+msgid "TIA Portal: Enable PUT/GET Communication for S7 Basic"
+msgstr "TIA Portal：启�?PUT/GET 通讯以使�?S7 Basic"
+
+msgid "Used when Location=Remote"
+msgstr "Location=Remote 时使�?
+
+
+msgid "Tuning"
+msgstr "ͨ�Ų���"
+
+
+msgid "Device Type"
+msgstr "�豸����"
+
+
+msgid "Connection"
+msgstr "���Ӳ���"
+

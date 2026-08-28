@@ -1018,14 +1018,16 @@ bool IndustrialProject::remove_scan_group(int p_index) {
 Dictionary IndustrialProject::to_dict() const {
 	Dictionary result;
 
-	Array groups_arr;
-	for (const auto &g : scan_groups) {
-		Dictionary gd;
-		gd["name"] = g.name;
-		gd["interval_ms"] = g.interval_ms;
-		groups_arr.append(gd);
+	if (!scan_groups.empty()) {
+		Array groups_arr;
+		for (const auto &g : scan_groups) {
+			Dictionary gd;
+			gd["name"] = g.name;
+			gd["interval_ms"] = g.interval_ms;
+			groups_arr.append(gd);
+		}
+		result["scan_groups"] = groups_arr;
 	}
-	result["scan_groups"] = groups_arr;
 
 	Array devices_arr;
 	for (const auto &dev : devices) {
