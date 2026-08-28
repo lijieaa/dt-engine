@@ -325,19 +325,29 @@ void ensure_device_flat_for_wire(IndustrialDeviceData &p_dev) {
 	lift_connection_params(p_dev);
 }
 
-int parse_driver_from_variant(const Variant &p_value) {
+void parse_driver_from_variant(const Variant &p_value, int &r_driver, String &r_driver_key) {
+	r_driver_key = String();
 	switch (p_value.get_type()) {
 		case Variant::INT:
-			return int(p_value);
-		case Variant::FLOAT:
-			return int(p_value);
+		case Variant::FLOAT: {
+			r_driver = int(p_value);
+			if (r_driver >= 0 && r_driver < industrial_get_driver_count()) {
+				r_driver_key = industrial_get_driver_key(r_driver);
+			}
+		} break;
 		case Variant::STRING: {
-			const String key = p_value;
-			const int idx = industrial_find_driver_index_by_key(key);
-			return idx >= 0 ? idx : 0;
-		}
+			r_driver_key = String(p_value);
+			if (r_driver_key.is_empty()) {
+				r_driver = -1;
+				break;
+			}
+			const int idx = industrial_find_driver_index_by_key(r_driver_key);
+			r_driver = idx >= 0 ? idx : -1;
+		} break;
 		default:
-			return 0;
+			r_driver = 0;
+			r_driver_key = industrial_get_driver_key(0);
+			break;
 	}
 }
 
@@ -383,11 +393,14 @@ Dictionary device_to_dict(const IndustrialDeviceData &p_dev) {
 	if (!dev.description.is_empty()) {
 		dd["description"] = dev.description;
 	}
-	const String driver_key = industrial_get_driver_key(dev.driver);
-	if (!driver_key.is_empty()) {
-		dd["driver"] = driver_key;
+	const String driver_wire = !dev.driver_key.is_empty()
+			? dev.driver_key
+			: industrial_get_driver_key(dev.driver);
+	if (!driver_wire.is_empty()) {
+		dd["driver"] = driver_wire;
 	}
 	dd["enabled"] = dev.enabled;
+	put_if_non_empty(dd, "scan_group", dev.scan_group);
 
 	put_if_non_empty(dd, "dev_type", dev.dev_type == "device" ? String() : dev.dev_type);
 	put_if_non_empty(dd, "location_mode", dev.location_mode == "Local" ? String() : dev.location_mode);
@@ -451,6 +464,8 @@ Dictionary device_to_dict(const IndustrialDeviceData &p_dev) {
 			td["writable"] = true;
 		}
 		put_if_nonzero(td, "poll_interval", tag.poll_interval);
+		put_if_non_empty(td, "scan_group", tag.scan_group);
+		put_if_non_empty(td, "unit", tag.unit);
 		if (!tag.scale_obj.is_empty()) {
 			td["scale"] = tag.scale_obj;
 		}
@@ -511,7 +526,7 @@ IndustrialDeviceData device_from_dict(const Dictionary &p_dd) {
 		dev.name = dict_get_string(p_dd, "id");
 	}
 	dev.description = dict_get_string(p_dd, "description");
-	dev.driver = parse_driver_from_variant(p_dd.get("driver", 0));
+	parse_driver_from_variant(p_dd.get("driver", 0), dev.driver, dev.driver_key);
 	dev.enabled = dict_get_bool(p_dd, "enabled", true);
 	dev.dev_type = dict_get_string(p_dd, "dev_type", "device");
 	dev.location_mode = dict_get_string(p_dd, "location_mode", "Local");
@@ -851,7 +866,13 @@ Array IndustrialProject::validate() const {
 			errors.append(TTR("Device has empty name."));
 			continue;
 		}
-		if (dev.driver < 0 || dev.driver >= industrial_get_driver_count()) {
+		if (dev.driver < 0) {
+			if (!dev.driver_key.is_empty()) {
+				errors.append(vformat(TTR("Device '%s' has unknown driver key '%s'."), dev.name, dev.driver_key));
+			} else {
+				errors.append(vformat(TTR("Device '%s' has invalid driver."), dev.name));
+			}
+		} else if (dev.driver >= industrial_get_driver_count()) {
 			errors.append(vformat(TTR("Device '%s' has invalid driver."), dev.name));
 		}
 		if (!dev.scan_group.is_empty()) {
@@ -873,14 +894,11 @@ Array IndustrialProject::validate() const {
 			if (tag.name.is_empty()) {
 				errors.append(vformat(TTR("Device '%s' has tag with empty name."), dev.name));
 			}
-			const bool has_catalog_format = !tag.data_format.is_empty();
-			const bool has_legacy_type = tag.data_type >= 0 && tag.data_type < TYPE_MAX;
-			const bool has_symbolic = tag.schema == "symbolic" && !tag.symbol.is_empty();
-			const bool has_absolute = tag.schema == "absolute" || !tag.address_type.is_empty();
-			if (!has_catalog_format && !has_legacy_type && !has_symbolic && !has_absolute && tag.address.is_empty()) {
+			const bool has_symbolic = !tag.symbol.is_empty();
+			const bool has_absolute = !tag.address_type.is_empty() || !tag.address_mode.is_empty();
+			const bool has_legacy_address = !tag.address.is_empty();
+			if (!has_symbolic && !has_absolute && !has_legacy_address) {
 				errors.append(vformat(TTR("Tag '%s' on device '%s' has no address or schema fields."), tag.name, dev.name));
-			} else if (!has_catalog_format && !has_legacy_type && !has_symbolic && !has_absolute) {
-				errors.append(vformat(TTR("Tag '%s' on device '%s' has invalid data type."), tag.name, dev.name));
 			}
 		}
 

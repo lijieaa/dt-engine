@@ -73,7 +73,8 @@ struct IndustrialTagData {
 struct IndustrialDeviceData {
 	String name;
 	String description;
-	int driver = 0; // Index into driver catalog; wire format uses driver_key string
+	int driver = 0; // Index into driver catalog; -1 when driver_key is unknown
+	String driver_key; // Wire-format catalog key (authoritative when driver == -1)
 	String dev_type = "device";
 	String location_mode = "Local";
 	String remote_hmi_ip;
