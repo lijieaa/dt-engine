@@ -394,6 +394,11 @@ void IndustrialEditorPlugin::_publish_project_to_runtime() {
 		return;
 	}
 
+	if (project->get_device_count() == 0) {
+		print_line("industrial_editor: publish skipped — no devices (create_project may still succeed)");
+		return;
+	}
+
 	Control *base_ctrl = EditorInterface::get_singleton() ? EditorInterface::get_singleton()->get_base_control() : nullptr;
 	if (!base_ctrl) {
 		print_line("industrial_editor: publish skipped — no base control");

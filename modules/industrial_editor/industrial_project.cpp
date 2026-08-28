@@ -444,8 +444,8 @@ Dictionary device_to_dict(const IndustrialDeviceData &p_dev) {
 
 		if (schema == "symbolic" || (!tag.symbol.is_empty() && tag.address_type.is_empty())) {
 			put_if_non_empty(td, "symbol", tag.symbol);
-			const String fmt = tag_wire_data_format(tag);
-			put_if_non_empty(td, "data_format", fmt);
+			// Symbolic Auto/empty format: omit data_format; do not fall back to legacy TYPE_BOOL→"bit".
+			put_if_non_empty(td, "data_format", tag.data_format);
 		} else if (schema == "absolute" || !tag.address_type.is_empty()) {
 			put_if_non_empty(td, "address_mode", tag.address_mode);
 			put_if_non_empty(td, "address_type", tag.address_type);
