@@ -2,10 +2,8 @@
 #include "industrial_driver_schema.h"
 
 #include "core/io/file_access.h"
-#include "core/variant/variant.h"
 #include "core/io/json.h"
-
-#include <algorithm>
+#include "core/variant/variant.h"
 
 namespace {
 
@@ -868,7 +866,7 @@ bool IndustrialProject::remove_device(int p_index) {
 	if (p_index < 0 || p_index >= (int)devices.size()) {
 		return false;
 	}
-	devices.erase(devices.begin() + p_index);
+	devices.remove_at(p_index);
 	return true;
 }
 
@@ -960,7 +958,7 @@ bool IndustrialProject::remove_tag(int p_device_index, int p_tag_index) {
 	if (p_tag_index < 0 || p_tag_index >= (int)tags.size()) {
 		return false;
 	}
-	tags.erase(tags.begin() + p_tag_index);
+	tags.remove_at(p_tag_index);
 	return true;
 }
 
@@ -1011,14 +1009,14 @@ bool IndustrialProject::remove_scan_group(int p_index) {
 	if (p_index < 0 || p_index >= (int)scan_groups.size()) {
 		return false;
 	}
-	scan_groups.erase(scan_groups.begin() + p_index);
+	scan_groups.remove_at(p_index);
 	return true;
 }
 
 Dictionary IndustrialProject::to_dict() const {
 	Dictionary result;
 
-	if (!scan_groups.empty()) {
+	if (!scan_groups.is_empty()) {
 		Array groups_arr;
 		for (const auto &g : scan_groups) {
 			Dictionary gd;

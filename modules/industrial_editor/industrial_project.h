@@ -2,11 +2,10 @@
 
 #include "core/object/ref_counted.h"
 #include "core/string/ustring.h"
+#include "core/templates/vector.h"
 #include "core/variant/array.h"
 #include "core/variant/dictionary.h"
 #include "scene/gui/tree.h"
-
-#include <vector>
 
 // Forward declarations.
 class IndustrialDeviceDock;
@@ -102,7 +101,7 @@ struct IndustrialDeviceData {
 	String scan_group;
 	bool enabled = true;
 	Dictionary connection_params; // deprecated: UI bridge; flat+options is authoritative
-	std::vector<IndustrialTagData> tags;
+	Vector<IndustrialTagData> tags;
 };
 
 // EBPro §3.1 device dialog field groups.
@@ -183,8 +182,8 @@ public:
 	void notify_changed();
 
 private:
-	std::vector<IndustrialDeviceData> devices;
-	std::vector<IndustrialScanGroup> scan_groups;
+	Vector<IndustrialDeviceData> devices;
+	Vector<IndustrialScanGroup> scan_groups;
 
 	static IndustrialTagData s_empty_tag;
 	static IndustrialDeviceData s_empty_device;
