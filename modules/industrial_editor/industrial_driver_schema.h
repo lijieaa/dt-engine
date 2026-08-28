@@ -58,5 +58,8 @@ const DriverMeta *industrial_get_driver_meta(int p_driver);
 // Returns the fallback driver key (e.g. "siemens_s7"), or empty string.
 String industrial_get_driver_key(int p_driver);
 
+// Resolves a catalog driver_key string to a driver index, or -1 if unknown.
+int industrial_find_driver_index_by_key(const String &p_key);
+
 // Returns the total driver count (max of backend and fallback).
 int industrial_get_driver_count();

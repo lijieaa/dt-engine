@@ -51,11 +51,21 @@ enum IndustrialDriver {
 // A single tag definition (replaces EBPro 0x1064-byte address item slot).
 struct IndustrialTagData {
 	String name;
-	String address;
-	int data_type = TYPE_BOOL;
+	String description;
+	String schema; // "absolute" | "symbolic"
+	String address_mode; // "bit" | "word"
+	String address_type;
+	String data_format; // catalog id (i16, f32, bit, …)
+	String address; // catalog offset for absolute; legacy raw address when schema unset
+	int db_number = 0;
+	int length = 0;
+	String symbol;
+	int data_type = TYPE_BOOL; // legacy UI enum; compat read only on wire
 	String scan_group;
 	bool writable = false;
-	double scale = 1.0;
+	int poll_interval = 0;
+	double scale = 1.0; // legacy scalar scale
+	Dictionary scale_obj; // {enabled, raw_min, raw_max, eng_min, eng_max}
 	String unit;
 };
 
@@ -63,10 +73,34 @@ struct IndustrialTagData {
 struct IndustrialDeviceData {
 	String name;
 	String description;
-	int driver = 0; // Index into the 81-entry driver catalog (0 = Siemens S7-1200/1500)
+	int driver = 0; // Index into driver catalog; wire format uses driver_key string
+	String dev_type = "device";
+	String location_mode = "Local";
+	String remote_hmi_ip;
+	String interface_type;
+	String ip;
+	int port = 0;
+	bool use_udp = false;
+	String serial_port;
+	String baud_rate;
+	int data_bits = 0;
+	String parity;
+	int stop_bits = 0;
+	String flow_control;
+	int station_no = 0;
+	int broadcast_station_no = 0;
+	bool use_station_variable = false;
+	int timeout = 0;
+	int comm_delay = 0;
+	int retries = 0;
+	int max_read_words = 0;
+	int max_write_words = 0;
+	int poll_interval = 0;
+	int block_size_words = 0;
+	Dictionary options;
 	String scan_group;
 	bool enabled = true;
-	Dictionary connection_params; // Protocol-specific fields (IP, port, baud, etc.)
+	Dictionary connection_params; // deprecated: load-only merge + UI bridge until Task 8
 	std::vector<IndustrialTagData> tags;
 };
 

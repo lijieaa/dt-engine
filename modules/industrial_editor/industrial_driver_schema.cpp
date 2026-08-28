@@ -286,6 +286,19 @@ String industrial_get_driver_key(int p_driver) {
 	return String(s_driver_catalog_fallback[p_driver].driver_key);
 }
 
+int industrial_find_driver_index_by_key(const String &p_key) {
+	if (p_key.is_empty()) {
+		return -1;
+	}
+	const int count = industrial_get_driver_count();
+	for (int i = 0; i < count; i++) {
+		if (industrial_get_driver_key(i) == p_key) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 int industrial_get_driver_count() {
 	int backend_count = IndustrialRuntimeClient::get_driver_count();
 	return backend_count > kFallbackDriverCount ? backend_count : kFallbackDriverCount;

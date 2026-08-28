@@ -7,6 +7,555 @@
 
 #include <algorithm>
 
+namespace {
+
+int dict_get_int(const Dictionary &p_dict, const String &p_key, int p_default = 0) {
+	Variant v = p_dict.get(p_key, p_default);
+	if (v.get_type() == Variant::INT || v.get_type() == Variant::FLOAT) {
+		return int(v);
+	}
+	if (v.get_type() == Variant::STRING) {
+		return String(v).to_int();
+	}
+	return p_default;
+}
+
+bool dict_get_bool(const Dictionary &p_dict, const String &p_key, bool p_default = false) {
+	Variant v = p_dict.get(p_key, p_default);
+	if (v.get_type() == Variant::BOOL) {
+		return v;
+	}
+	if (v.get_type() == Variant::STRING) {
+		const String s = v;
+		return s == "true" || s == "1";
+	}
+	return p_default;
+}
+
+String dict_get_string(const Dictionary &p_dict, const String &p_key, const String &p_default = String()) {
+	Variant v = p_dict.get(p_key, p_default);
+	if (v.get_type() == Variant::NIL) {
+		return p_default;
+	}
+	return String(v);
+}
+
+String data_format_from_legacy_type(int p_type) {
+	switch (p_type) {
+		case TYPE_BOOL:
+			return "bit";
+		case TYPE_INT16:
+			return "i16";
+		case TYPE_INT32:
+			return "i32";
+		case TYPE_UINT16:
+			return "u16";
+		case TYPE_UINT32:
+			return "u32";
+		case TYPE_BYTE:
+			return "u8";
+		case TYPE_FLOAT:
+		case TYPE_REAL32:
+			return "f32";
+		case TYPE_DOUBLE:
+		case TYPE_REAL64:
+			return "f64";
+		case TYPE_BCD16:
+			return "bcd16";
+		case TYPE_BCD32:
+			return "bcd32";
+		default:
+			return String();
+	}
+}
+
+int legacy_type_from_data_format(const String &p_format) {
+	if (p_format == "bit" || p_format == "bool") {
+		return TYPE_BOOL;
+	}
+	if (p_format == "i16" || p_format == "int16") {
+		return TYPE_INT16;
+	}
+	if (p_format == "i32" || p_format == "int32") {
+		return TYPE_INT32;
+	}
+	if (p_format == "u16" || p_format == "uint16") {
+		return TYPE_UINT16;
+	}
+	if (p_format == "u32" || p_format == "uint32") {
+		return TYPE_UINT32;
+	}
+	if (p_format == "u8" || p_format == "byte") {
+		return TYPE_BYTE;
+	}
+	if (p_format == "f32" || p_format == "float" || p_format == "real32") {
+		return TYPE_FLOAT;
+	}
+	if (p_format == "f64" || p_format == "double" || p_format == "real64") {
+		return TYPE_DOUBLE;
+	}
+	if (p_format == "bcd16") {
+		return TYPE_BCD16;
+	}
+	if (p_format == "bcd32") {
+		return TYPE_BCD32;
+	}
+	return -1;
+}
+
+bool apply_known_device_key(IndustrialDeviceData &p_dev, const String &p_key, const Variant &p_value) {
+	if (p_key == "ip") {
+		if (p_dev.ip.is_empty()) {
+			p_dev.ip = String(p_value);
+		}
+		return true;
+	}
+	if (p_key == "port") {
+		if (p_dev.port == 0) {
+			p_dev.port = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "endpoint") {
+		if (p_dev.ip.is_empty()) {
+			const String ep = String(p_value);
+			const int colon = ep.rfind(":");
+			if (colon > 0) {
+				p_dev.ip = ep.substr(0, colon);
+				p_dev.port = ep.substr(colon + 1).to_int();
+			} else if (!ep.is_empty()) {
+				p_dev.ip = ep;
+			}
+		}
+		return true;
+	}
+	if (p_key == "use_udp") {
+		p_dev.use_udp = bool(p_value);
+		return true;
+	}
+	if (p_key == "serial_port") {
+		if (p_dev.serial_port.is_empty()) {
+			p_dev.serial_port = String(p_value);
+		}
+		return true;
+	}
+	if (p_key == "baud_rate") {
+		if (p_dev.baud_rate.is_empty()) {
+			p_dev.baud_rate = String(p_value);
+		}
+		return true;
+	}
+	if (p_key == "data_bits") {
+		if (p_dev.data_bits == 0) {
+			p_dev.data_bits = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "parity") {
+		if (p_dev.parity.is_empty()) {
+			p_dev.parity = String(p_value);
+		}
+		return true;
+	}
+	if (p_key == "stop_bits") {
+		if (p_dev.stop_bits == 0) {
+			p_dev.stop_bits = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "flow_control") {
+		if (p_dev.flow_control.is_empty()) {
+			p_dev.flow_control = String(p_value);
+		}
+		return true;
+	}
+	if (p_key == "station_no") {
+		if (p_dev.station_no == 0) {
+			p_dev.station_no = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "broadcast_station_no") {
+		if (p_dev.broadcast_station_no == 0) {
+			p_dev.broadcast_station_no = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "use_station_variable") {
+		p_dev.use_station_variable = bool(p_value);
+		return true;
+	}
+	if (p_key == "timeout") {
+		if (p_dev.timeout == 0) {
+			p_dev.timeout = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "comm_delay") {
+		if (p_dev.comm_delay == 0) {
+			p_dev.comm_delay = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "retries") {
+		if (p_dev.retries == 0) {
+			p_dev.retries = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "max_read_words") {
+		if (p_dev.max_read_words == 0) {
+			p_dev.max_read_words = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "max_write_words") {
+		if (p_dev.max_write_words == 0) {
+			p_dev.max_write_words = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "poll_interval") {
+		if (p_dev.poll_interval == 0) {
+			p_dev.poll_interval = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "block_size_words") {
+		if (p_dev.block_size_words == 0) {
+			p_dev.block_size_words = int(p_value);
+		}
+		return true;
+	}
+	if (p_key == "location_mode") {
+		if (p_dev.location_mode == "Local") {
+			p_dev.location_mode = String(p_value);
+		}
+		return true;
+	}
+	if (p_key == "remote_hmi_ip") {
+		if (p_dev.remote_hmi_ip.is_empty()) {
+			p_dev.remote_hmi_ip = String(p_value);
+		}
+		return true;
+	}
+	if (p_key == "dev_type") {
+		if (p_dev.dev_type == "device") {
+			p_dev.dev_type = String(p_value);
+		}
+		return true;
+	}
+	if (p_key == "interface_type") {
+		if (p_dev.interface_type.is_empty()) {
+			p_dev.interface_type = String(p_value);
+		}
+		return true;
+	}
+	return false;
+}
+
+void lift_connection_params(IndustrialDeviceData &p_dev) {
+	if (p_dev.connection_params.is_empty()) {
+		return;
+	}
+	Array keys = p_dev.connection_params.keys();
+	for (int i = 0; i < keys.size(); i++) {
+		const String key = keys[i];
+		const Variant value = p_dev.connection_params[key];
+		if (apply_known_device_key(p_dev, key, value)) {
+			continue;
+		}
+		if (!p_dev.options.has(key)) {
+			p_dev.options[key] = value;
+		}
+	}
+	p_dev.connection_params.clear();
+}
+
+void sync_connection_params_from_flat(IndustrialDeviceData &p_dev) {
+	p_dev.connection_params.clear();
+	auto set_str = [&](const String &p_key, const String &p_value) {
+		if (!p_value.is_empty()) {
+			p_dev.connection_params[p_key] = p_value;
+		}
+	};
+	auto set_int = [&](const String &p_key, int p_value) {
+		if (p_value != 0) {
+			p_dev.connection_params[p_key] = p_value;
+		}
+	};
+	auto set_bool = [&](const String &p_key, bool p_value) {
+		if (p_value) {
+			p_dev.connection_params[p_key] = p_value;
+		}
+	};
+
+	set_str("dev_type", p_dev.dev_type == "device" ? String() : p_dev.dev_type);
+	set_str("location_mode", p_dev.location_mode == "Local" ? String() : p_dev.location_mode);
+	set_str("remote_hmi_ip", p_dev.remote_hmi_ip);
+	set_str("interface_type", p_dev.interface_type);
+	set_str("ip", p_dev.ip);
+	set_int("port", p_dev.port);
+	set_bool("use_udp", p_dev.use_udp);
+	set_str("serial_port", p_dev.serial_port);
+	set_str("baud_rate", p_dev.baud_rate);
+	set_int("data_bits", p_dev.data_bits);
+	set_str("parity", p_dev.parity);
+	set_int("stop_bits", p_dev.stop_bits);
+	set_str("flow_control", p_dev.flow_control);
+	set_int("station_no", p_dev.station_no);
+	set_int("broadcast_station_no", p_dev.broadcast_station_no);
+	set_bool("use_station_variable", p_dev.use_station_variable);
+	set_int("timeout", p_dev.timeout);
+	set_int("comm_delay", p_dev.comm_delay);
+	set_int("retries", p_dev.retries);
+	set_int("max_read_words", p_dev.max_read_words);
+	set_int("max_write_words", p_dev.max_write_words);
+	set_int("poll_interval", p_dev.poll_interval);
+	set_int("block_size_words", p_dev.block_size_words);
+
+	Array opt_keys = p_dev.options.keys();
+	for (int i = 0; i < opt_keys.size(); i++) {
+		const String key = opt_keys[i];
+		p_dev.connection_params[key] = p_dev.options[key];
+	}
+}
+
+void ensure_device_flat_for_wire(IndustrialDeviceData &p_dev) {
+	lift_connection_params(p_dev);
+}
+
+int parse_driver_from_variant(const Variant &p_value) {
+	switch (p_value.get_type()) {
+		case Variant::INT:
+			return int(p_value);
+		case Variant::FLOAT:
+			return int(p_value);
+		case Variant::STRING: {
+			const String key = p_value;
+			const int idx = industrial_find_driver_index_by_key(key);
+			return idx >= 0 ? idx : 0;
+		}
+		default:
+			return 0;
+	}
+}
+
+String infer_tag_schema(const IndustrialTagData &p_tag) {
+	if (!p_tag.schema.is_empty()) {
+		return p_tag.schema;
+	}
+	if (!p_tag.symbol.is_empty() && p_tag.address_type.is_empty()) {
+		return "symbolic";
+	}
+	if (!p_tag.address_type.is_empty()) {
+		return "absolute";
+	}
+	return String();
+}
+
+String tag_wire_data_format(const IndustrialTagData &p_tag) {
+	if (!p_tag.data_format.is_empty()) {
+		return p_tag.data_format;
+	}
+	return data_format_from_legacy_type(p_tag.data_type);
+}
+
+void put_if_non_empty(Dictionary &p_dict, const String &p_key, const String &p_value) {
+	if (!p_value.is_empty()) {
+		p_dict[p_key] = p_value;
+	}
+}
+
+void put_if_nonzero(Dictionary &p_dict, const String &p_key, int p_value) {
+	if (p_value != 0) {
+		p_dict[p_key] = p_value;
+	}
+}
+
+Dictionary device_to_dict(const IndustrialDeviceData &p_dev) {
+	IndustrialDeviceData dev = p_dev;
+	ensure_device_flat_for_wire(dev);
+
+	Dictionary dd;
+	dd["id"] = dev.name;
+	dd["name"] = dev.name;
+	if (!dev.description.is_empty()) {
+		dd["description"] = dev.description;
+	}
+	const String driver_key = industrial_get_driver_key(dev.driver);
+	if (!driver_key.is_empty()) {
+		dd["driver"] = driver_key;
+	}
+	dd["enabled"] = dev.enabled;
+
+	put_if_non_empty(dd, "dev_type", dev.dev_type == "device" ? String() : dev.dev_type);
+	put_if_non_empty(dd, "location_mode", dev.location_mode == "Local" ? String() : dev.location_mode);
+	put_if_non_empty(dd, "remote_hmi_ip", dev.remote_hmi_ip);
+	put_if_non_empty(dd, "interface_type", dev.interface_type);
+	put_if_non_empty(dd, "ip", dev.ip);
+	put_if_nonzero(dd, "port", dev.port);
+	if (dev.use_udp) {
+		dd["use_udp"] = true;
+	}
+	put_if_non_empty(dd, "serial_port", dev.serial_port);
+	put_if_non_empty(dd, "baud_rate", dev.baud_rate);
+	put_if_nonzero(dd, "data_bits", dev.data_bits);
+	put_if_non_empty(dd, "parity", dev.parity);
+	put_if_nonzero(dd, "stop_bits", dev.stop_bits);
+	put_if_non_empty(dd, "flow_control", dev.flow_control);
+	put_if_nonzero(dd, "station_no", dev.station_no);
+	put_if_nonzero(dd, "broadcast_station_no", dev.broadcast_station_no);
+	if (dev.use_station_variable) {
+		dd["use_station_variable"] = true;
+	}
+	put_if_nonzero(dd, "timeout", dev.timeout);
+	put_if_nonzero(dd, "comm_delay", dev.comm_delay);
+	put_if_nonzero(dd, "retries", dev.retries);
+	put_if_nonzero(dd, "max_read_words", dev.max_read_words);
+	put_if_nonzero(dd, "max_write_words", dev.max_write_words);
+	put_if_nonzero(dd, "poll_interval", dev.poll_interval);
+	put_if_nonzero(dd, "block_size_words", dev.block_size_words);
+	if (!dev.options.is_empty()) {
+		dd["options"] = dev.options;
+	}
+
+	Array tags_arr;
+	for (const auto &tag : dev.tags) {
+		Dictionary td;
+		td["name"] = tag.name;
+		put_if_non_empty(td, "description", tag.description);
+
+		const String schema = infer_tag_schema(tag);
+		put_if_non_empty(td, "schema", schema);
+
+		if (schema == "symbolic" || (!tag.symbol.is_empty() && tag.address_type.is_empty())) {
+			put_if_non_empty(td, "symbol", tag.symbol);
+			const String fmt = tag_wire_data_format(tag);
+			put_if_non_empty(td, "data_format", fmt);
+		} else if (schema == "absolute" || !tag.address_type.is_empty()) {
+			put_if_non_empty(td, "address_mode", tag.address_mode);
+			put_if_non_empty(td, "address_type", tag.address_type);
+			put_if_nonzero(td, "db_number", tag.db_number);
+			put_if_non_empty(td, "address", tag.address);
+			const String fmt = tag_wire_data_format(tag);
+			put_if_non_empty(td, "data_format", fmt);
+			put_if_nonzero(td, "length", tag.length);
+		} else {
+			put_if_non_empty(td, "address", tag.address);
+			const String fmt = tag_wire_data_format(tag);
+			put_if_non_empty(td, "data_format", fmt);
+		}
+
+		if (tag.writable) {
+			td["writable"] = true;
+		}
+		put_if_nonzero(td, "poll_interval", tag.poll_interval);
+		if (!tag.scale_obj.is_empty()) {
+			td["scale"] = tag.scale_obj;
+		}
+		tags_arr.append(td);
+	}
+	dd["tags"] = tags_arr;
+	return dd;
+}
+
+IndustrialTagData tag_from_dict(const Dictionary &p_td) {
+	IndustrialTagData tag;
+	tag.name = dict_get_string(p_td, "name");
+	tag.description = dict_get_string(p_td, "description");
+	tag.schema = dict_get_string(p_td, "schema");
+	tag.address_mode = dict_get_string(p_td, "address_mode");
+	tag.address_type = dict_get_string(p_td, "address_type");
+	tag.data_format = dict_get_string(p_td, "data_format");
+	tag.address = dict_get_string(p_td, "address");
+	tag.db_number = dict_get_int(p_td, "db_number");
+	tag.length = dict_get_int(p_td, "length");
+	tag.symbol = dict_get_string(p_td, "symbol");
+	tag.scan_group = dict_get_string(p_td, "scan_group");
+	tag.writable = dict_get_bool(p_td, "writable");
+	tag.poll_interval = dict_get_int(p_td, "poll_interval");
+	tag.unit = dict_get_string(p_td, "unit");
+
+	if (p_td.has("scale")) {
+		Variant scale_v = p_td.get("scale");
+		if (scale_v.get_type() == Variant::DICTIONARY) {
+			tag.scale_obj = scale_v;
+		} else if (scale_v.get_type() == Variant::INT || scale_v.get_type() == Variant::FLOAT) {
+			tag.scale = scale_v;
+		}
+	}
+
+	if (p_td.has("data_type")) {
+		tag.data_type = dict_get_int(p_td, "data_type", TYPE_BOOL);
+	}
+	if (tag.data_format.is_empty() && p_td.has("data_type")) {
+		tag.data_format = data_format_from_legacy_type(tag.data_type);
+	} else if (!tag.data_format.is_empty()) {
+		const int mapped = legacy_type_from_data_format(tag.data_format);
+		if (mapped >= 0) {
+			tag.data_type = mapped;
+		}
+	}
+
+	if (tag.schema.is_empty()) {
+		tag.schema = infer_tag_schema(tag);
+	}
+	return tag;
+}
+
+IndustrialDeviceData device_from_dict(const Dictionary &p_dd) {
+	IndustrialDeviceData dev;
+	dev.name = dict_get_string(p_dd, "name");
+	if (dev.name.is_empty()) {
+		dev.name = dict_get_string(p_dd, "id");
+	}
+	dev.description = dict_get_string(p_dd, "description");
+	dev.driver = parse_driver_from_variant(p_dd.get("driver", 0));
+	dev.enabled = dict_get_bool(p_dd, "enabled", true);
+	dev.dev_type = dict_get_string(p_dd, "dev_type", "device");
+	dev.location_mode = dict_get_string(p_dd, "location_mode", "Local");
+	dev.remote_hmi_ip = dict_get_string(p_dd, "remote_hmi_ip");
+	dev.interface_type = dict_get_string(p_dd, "interface_type");
+	dev.ip = dict_get_string(p_dd, "ip");
+	dev.port = dict_get_int(p_dd, "port");
+	dev.use_udp = dict_get_bool(p_dd, "use_udp");
+	dev.serial_port = dict_get_string(p_dd, "serial_port");
+	dev.baud_rate = dict_get_string(p_dd, "baud_rate");
+	dev.data_bits = dict_get_int(p_dd, "data_bits");
+	dev.parity = dict_get_string(p_dd, "parity");
+	dev.stop_bits = dict_get_int(p_dd, "stop_bits");
+	dev.flow_control = dict_get_string(p_dd, "flow_control");
+	dev.station_no = dict_get_int(p_dd, "station_no");
+	dev.broadcast_station_no = dict_get_int(p_dd, "broadcast_station_no");
+	dev.use_station_variable = dict_get_bool(p_dd, "use_station_variable");
+	dev.timeout = dict_get_int(p_dd, "timeout");
+	dev.comm_delay = dict_get_int(p_dd, "comm_delay");
+	dev.retries = dict_get_int(p_dd, "retries");
+	dev.max_read_words = dict_get_int(p_dd, "max_read_words");
+	dev.max_write_words = dict_get_int(p_dd, "max_write_words");
+	dev.poll_interval = dict_get_int(p_dd, "poll_interval");
+	dev.block_size_words = dict_get_int(p_dd, "block_size_words");
+	dev.scan_group = dict_get_string(p_dd, "scan_group");
+	dev.options = p_dd.get("options", Dictionary());
+	dev.connection_params = p_dd.get("connection_params", Dictionary());
+
+	lift_connection_params(dev);
+	sync_connection_params_from_flat(dev);
+
+	Array tags_arr = p_dd.get("tags", Array());
+	for (int j = 0; j < tags_arr.size(); j++) {
+		Dictionary td = tags_arr[j];
+		IndustrialTagData tag = tag_from_dict(td);
+		if (!tag.name.is_empty()) {
+			dev.tags.push_back(tag);
+		}
+	}
+	return dev;
+}
+
+} // namespace
+
 IndustrialTagData IndustrialProject::s_empty_tag;
 IndustrialDeviceData IndustrialProject::s_empty_device;
 
@@ -210,7 +759,6 @@ bool IndustrialProject::remove_scan_group(int p_index) {
 Dictionary IndustrialProject::to_dict() const {
 	Dictionary result;
 
-	// Scan groups.
 	Array groups_arr;
 	for (const auto &g : scan_groups) {
 		Dictionary gd;
@@ -220,31 +768,9 @@ Dictionary IndustrialProject::to_dict() const {
 	}
 	result["scan_groups"] = groups_arr;
 
-	// Devices.
 	Array devices_arr;
 	for (const auto &dev : devices) {
-		Dictionary dd;
-		dd["name"] = dev.name;
-		dd["description"] = dev.description;
-		dd["driver"] = dev.driver;
-		dd["scan_group"] = dev.scan_group;
-		dd["enabled"] = dev.enabled;
-		dd["connection_params"] = dev.connection_params;
-
-		Array tags_arr;
-		for (const auto &tag : dev.tags) {
-			Dictionary td;
-			td["name"] = tag.name;
-			td["address"] = tag.address;
-			td["data_type"] = tag.data_type;
-			td["scan_group"] = tag.scan_group;
-			td["writable"] = tag.writable;
-			td["scale"] = tag.scale;
-			td["unit"] = tag.unit;
-			tags_arr.append(td);
-		}
-		dd["tags"] = tags_arr;
-		devices_arr.append(dd);
+		devices_arr.append(device_to_dict(dev));
 	}
 	result["devices"] = devices_arr;
 
@@ -255,7 +781,6 @@ void IndustrialProject::from_dict(const Dictionary &p_data) {
 	devices.clear();
 	scan_groups.clear();
 
-	// Scan groups.
 	Array groups_arr = p_data.get("scan_groups", Array());
 	for (int i = 0; i < groups_arr.size(); i++) {
 		Dictionary gd = groups_arr[i];
@@ -267,33 +792,10 @@ void IndustrialProject::from_dict(const Dictionary &p_data) {
 		}
 	}
 
-	// Devices.
 	Array devices_arr = p_data.get("devices", Array());
 	for (int i = 0; i < devices_arr.size(); i++) {
 		Dictionary dd = devices_arr[i];
-		IndustrialDeviceData dev;
-		dev.name = dd.get("name", "");
-		dev.description = dd.get("description", "");
-		dev.driver = dd.get("driver", 0);
-		dev.scan_group = dd.get("scan_group", "");
-		dev.enabled = dd.get("enabled", true);
-		dev.connection_params = dd.get("connection_params", Dictionary());
-
-		Array tags_arr = dd.get("tags", Array());
-		for (int j = 0; j < tags_arr.size(); j++) {
-			Dictionary td = tags_arr[j];
-			IndustrialTagData tag;
-			tag.name = td.get("name", "");
-			tag.address = td.get("address", "");
-			tag.data_type = td.get("data_type", 0);
-			tag.scan_group = td.get("scan_group", "");
-			tag.writable = td.get("writable", false);
-			tag.scale = td.get("scale", 1.0);
-			tag.unit = td.get("unit", "");
-			if (!tag.name.is_empty()) {
-				dev.tags.push_back(tag);
-			}
-		}
+		IndustrialDeviceData dev = device_from_dict(dd);
 		if (!dev.name.is_empty()) {
 			devices.push_back(dev);
 		}
@@ -371,7 +873,13 @@ Array IndustrialProject::validate() const {
 			if (tag.name.is_empty()) {
 				errors.append(vformat(TTR("Device '%s' has tag with empty name."), dev.name));
 			}
-			if (tag.data_type < 0 || tag.data_type >= TYPE_MAX) {
+			const bool has_catalog_format = !tag.data_format.is_empty();
+			const bool has_legacy_type = tag.data_type >= 0 && tag.data_type < TYPE_MAX;
+			const bool has_symbolic = tag.schema == "symbolic" && !tag.symbol.is_empty();
+			const bool has_absolute = tag.schema == "absolute" || !tag.address_type.is_empty();
+			if (!has_catalog_format && !has_legacy_type && !has_symbolic && !has_absolute && tag.address.is_empty()) {
+				errors.append(vformat(TTR("Tag '%s' on device '%s' has no address or schema fields."), tag.name, dev.name));
+			} else if (!has_catalog_format && !has_legacy_type && !has_symbolic && !has_absolute) {
 				errors.append(vformat(TTR("Tag '%s' on device '%s' has invalid data type."), tag.name, dev.name));
 			}
 		}
