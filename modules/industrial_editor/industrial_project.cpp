@@ -571,6 +571,250 @@ IndustrialDeviceData device_from_dict(const Dictionary &p_dd) {
 
 } // namespace
 
+bool industrial_set_device_flat_key(IndustrialDeviceData &p_dev, const String &p_key, const Variant &p_value) {
+	if (p_key == "ip") {
+		p_dev.ip = String(p_value);
+		return true;
+	}
+	if (p_key == "port") {
+		p_dev.port = int(p_value);
+		return true;
+	}
+	if (p_key == "use_udp") {
+		p_dev.use_udp = bool(p_value);
+		return true;
+	}
+	if (p_key == "serial_port") {
+		p_dev.serial_port = String(p_value);
+		return true;
+	}
+	if (p_key == "baud_rate") {
+		p_dev.baud_rate = String(p_value);
+		return true;
+	}
+	if (p_key == "data_bits") {
+		p_dev.data_bits = int(p_value);
+		return true;
+	}
+	if (p_key == "parity") {
+		p_dev.parity = String(p_value);
+		return true;
+	}
+	if (p_key == "stop_bits") {
+		p_dev.stop_bits = int(p_value);
+		return true;
+	}
+	if (p_key == "flow_control") {
+		p_dev.flow_control = String(p_value);
+		return true;
+	}
+	if (p_key == "station_no") {
+		p_dev.station_no = int(p_value);
+		return true;
+	}
+	if (p_key == "broadcast_station_no") {
+		p_dev.broadcast_station_no = int(p_value);
+		return true;
+	}
+	if (p_key == "use_station_variable") {
+		p_dev.use_station_variable = bool(p_value);
+		return true;
+	}
+	if (p_key == "timeout") {
+		p_dev.timeout = int(p_value);
+		return true;
+	}
+	if (p_key == "comm_delay") {
+		p_dev.comm_delay = int(p_value);
+		return true;
+	}
+	if (p_key == "retries") {
+		p_dev.retries = int(p_value);
+		return true;
+	}
+	if (p_key == "max_read_words") {
+		p_dev.max_read_words = int(p_value);
+		return true;
+	}
+	if (p_key == "max_write_words") {
+		p_dev.max_write_words = int(p_value);
+		return true;
+	}
+	if (p_key == "poll_interval") {
+		p_dev.poll_interval = int(p_value);
+		return true;
+	}
+	if (p_key == "block_size_words") {
+		p_dev.block_size_words = int(p_value);
+		return true;
+	}
+	if (p_key == "location_mode") {
+		p_dev.location_mode = String(p_value);
+		return true;
+	}
+	if (p_key == "remote_hmi_ip") {
+		p_dev.remote_hmi_ip = String(p_value);
+		return true;
+	}
+	if (p_key == "dev_type") {
+		p_dev.dev_type = String(p_value);
+		return true;
+	}
+	if (p_key == "interface_type") {
+		p_dev.interface_type = String(p_value);
+		return true;
+	}
+	return false;
+}
+
+Dictionary industrial_device_param_dict(const IndustrialDeviceData &p_dev) {
+	Dictionary d;
+	d["dev_type"] = p_dev.dev_type;
+	d["location_mode"] = p_dev.location_mode;
+	if (!p_dev.remote_hmi_ip.is_empty()) {
+		d["remote_hmi_ip"] = p_dev.remote_hmi_ip;
+	}
+	if (!p_dev.interface_type.is_empty()) {
+		d["interface_type"] = p_dev.interface_type;
+	}
+	if (!p_dev.ip.is_empty()) {
+		d["ip"] = p_dev.ip;
+	}
+	if (p_dev.port != 0) {
+		d["port"] = p_dev.port;
+	}
+	if (p_dev.use_udp) {
+		d["use_udp"] = true;
+	}
+	if (!p_dev.serial_port.is_empty()) {
+		d["serial_port"] = p_dev.serial_port;
+	}
+	if (!p_dev.baud_rate.is_empty()) {
+		d["baud_rate"] = p_dev.baud_rate;
+	}
+	if (p_dev.data_bits != 0) {
+		d["data_bits"] = p_dev.data_bits;
+	}
+	if (!p_dev.parity.is_empty()) {
+		d["parity"] = p_dev.parity;
+	}
+	if (p_dev.stop_bits != 0) {
+		d["stop_bits"] = p_dev.stop_bits;
+	}
+	if (!p_dev.flow_control.is_empty()) {
+		d["flow_control"] = p_dev.flow_control;
+	}
+	if (p_dev.station_no != 0) {
+		d["station_no"] = p_dev.station_no;
+	}
+	if (p_dev.broadcast_station_no != 0) {
+		d["broadcast_station_no"] = p_dev.broadcast_station_no;
+	}
+	if (p_dev.use_station_variable) {
+		d["use_station_variable"] = true;
+	}
+	if (p_dev.timeout != 0) {
+		d["timeout"] = p_dev.timeout;
+	}
+	if (p_dev.comm_delay != 0) {
+		d["comm_delay"] = p_dev.comm_delay;
+	}
+	if (p_dev.retries != 0) {
+		d["retries"] = p_dev.retries;
+	}
+	if (p_dev.max_read_words != 0) {
+		d["max_read_words"] = p_dev.max_read_words;
+	}
+	if (p_dev.max_write_words != 0) {
+		d["max_write_words"] = p_dev.max_write_words;
+	}
+	if (p_dev.poll_interval != 0) {
+		d["poll_interval"] = p_dev.poll_interval;
+	}
+	if (p_dev.block_size_words != 0) {
+		d["block_size_words"] = p_dev.block_size_words;
+	}
+
+	Array opt_keys = p_dev.options.keys();
+	for (int i = 0; i < opt_keys.size(); i++) {
+		const String key = opt_keys[i];
+		d[key] = p_dev.options[key];
+	}
+
+	// Compat: lift any legacy-only keys still sitting in connection_params.
+	Array legacy_keys = p_dev.connection_params.keys();
+	for (int i = 0; i < legacy_keys.size(); i++) {
+		const String key = legacy_keys[i];
+		if (!d.has(key)) {
+			d[key] = p_dev.connection_params[key];
+		}
+	}
+	return d;
+}
+
+void industrial_apply_param_dict_to_device(IndustrialDeviceData &p_dev, const Dictionary &p_params) {
+	Dictionary new_options;
+	Array keys = p_params.keys();
+	for (int i = 0; i < keys.size(); i++) {
+		const String key = keys[i];
+		const Variant value = p_params[key];
+		if (industrial_set_device_flat_key(p_dev, key, value)) {
+			continue;
+		}
+		new_options[key] = value;
+	}
+	p_dev.options = new_options;
+}
+
+void industrial_sync_device_connection_params(IndustrialDeviceData &p_dev) {
+	p_dev.connection_params.clear();
+	auto set_str = [&](const String &p_key, const String &p_value) {
+		if (!p_value.is_empty()) {
+			p_dev.connection_params[p_key] = p_value;
+		}
+	};
+	auto set_int = [&](const String &p_key, int p_value) {
+		if (p_value != 0) {
+			p_dev.connection_params[p_key] = p_value;
+		}
+	};
+	auto set_bool = [&](const String &p_key, bool p_value) {
+		if (p_value) {
+			p_dev.connection_params[p_key] = p_value;
+		}
+	};
+
+	set_str("dev_type", p_dev.dev_type == "device" ? String() : p_dev.dev_type);
+	set_str("location_mode", p_dev.location_mode == "Local" ? String() : p_dev.location_mode);
+	set_str("remote_hmi_ip", p_dev.remote_hmi_ip);
+	set_str("interface_type", p_dev.interface_type);
+	set_str("ip", p_dev.ip);
+	set_int("port", p_dev.port);
+	set_bool("use_udp", p_dev.use_udp);
+	set_str("serial_port", p_dev.serial_port);
+	set_str("baud_rate", p_dev.baud_rate);
+	set_int("data_bits", p_dev.data_bits);
+	set_str("parity", p_dev.parity);
+	set_int("stop_bits", p_dev.stop_bits);
+	set_str("flow_control", p_dev.flow_control);
+	set_int("station_no", p_dev.station_no);
+	set_int("broadcast_station_no", p_dev.broadcast_station_no);
+	set_bool("use_station_variable", p_dev.use_station_variable);
+	set_int("timeout", p_dev.timeout);
+	set_int("comm_delay", p_dev.comm_delay);
+	set_int("retries", p_dev.retries);
+	set_int("max_read_words", p_dev.max_read_words);
+	set_int("max_write_words", p_dev.max_write_words);
+	set_int("poll_interval", p_dev.poll_interval);
+	set_int("block_size_words", p_dev.block_size_words);
+
+	Array opt_keys = p_dev.options.keys();
+	for (int i = 0; i < opt_keys.size(); i++) {
+		const String key = opt_keys[i];
+		p_dev.connection_params[key] = p_dev.options[key];
+	}
+}
+
 IndustrialTagData IndustrialProject::s_empty_tag;
 IndustrialDeviceData IndustrialProject::s_empty_device;
 

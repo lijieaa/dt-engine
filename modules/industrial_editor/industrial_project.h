@@ -101,9 +101,23 @@ struct IndustrialDeviceData {
 	Dictionary options;
 	String scan_group;
 	bool enabled = true;
-	Dictionary connection_params; // deprecated: load-only merge + UI bridge until Task 8
+	Dictionary connection_params; // deprecated: UI bridge; flat+options is authoritative
 	std::vector<IndustrialTagData> tags;
 };
+
+// EBPro §3.1 device dialog field groups.
+enum IndustrialDeviceFieldGroup {
+	IND_DEVICE_GROUP_COMMON = 0,
+	IND_DEVICE_GROUP_INTERFACE = 1,
+	IND_DEVICE_GROUP_TUNING = 2,
+	IND_DEVICE_GROUP_PROTOCOL = 3,
+};
+
+IndustrialDeviceFieldGroup industrial_classify_device_field(const String &p_key);
+bool industrial_is_known_device_flat_key(const String &p_key);
+Dictionary industrial_device_param_dict(const IndustrialDeviceData &p_dev);
+void industrial_apply_param_dict_to_device(IndustrialDeviceData &p_dev, const Dictionary &p_params);
+void industrial_sync_device_connection_params(IndustrialDeviceData &p_dev);
 
 // Scan group definition.
 struct IndustrialScanGroup {

@@ -1,6 +1,7 @@
 #include "industrial_device_form.h"
 #include "industrial_project.h"
 #include "industrial_driver_schema.h"
+#include "industrial_device_fields.h"
 
 #include "editor/editor_string_names.h"
 #include "core/object/callable_mp.h"
@@ -110,16 +111,44 @@ void IndustrialDeviceForm::_build_ui() {
 
 	add_child(memnew(HSeparator));
 
-	// ── Connection Params section ──
+	// ── §A–§D connection groups ──
 	label_conn_params = memnew(Label);
-	label_conn_params->set_text(TTR("Connection Parameters"));
+	label_conn_params->set_text(TTR("Connection"));
 	label_conn_params->add_theme_font_size_override("font_size", 14);
 	label_conn_params->add_theme_color_override("font_color", Color(0.6, 0.8, 1.0));
 	add_child(label_conn_params);
 
-	params_container = memnew(VBoxContainer);
-	params_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	add_child(params_container);
+	label_common = memnew(Label);
+	label_common->set_text(TTR("Common"));
+	label_common->add_theme_font_size_override("font_size", 12);
+	add_child(label_common);
+	common_params_container = memnew(VBoxContainer);
+	common_params_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	add_child(common_params_container);
+
+	label_interface = memnew(Label);
+	label_interface->set_text(TTR("Interface"));
+	label_interface->add_theme_font_size_override("font_size", 12);
+	add_child(label_interface);
+	interface_params_container = memnew(VBoxContainer);
+	interface_params_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	add_child(interface_params_container);
+
+	label_protocol = memnew(Label);
+	label_protocol->set_text(TTR("Protocol"));
+	label_protocol->add_theme_font_size_override("font_size", 12);
+	add_child(label_protocol);
+	protocol_params_container = memnew(VBoxContainer);
+	protocol_params_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	add_child(protocol_params_container);
+
+	label_tuning = memnew(Label);
+	label_tuning->set_text(TTR("Tuning"));
+	label_tuning->add_theme_font_size_override("font_size", 12);
+	add_child(label_tuning);
+	tuning_params_container = memnew(VBoxContainer);
+	tuning_params_container->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	add_child(tuning_params_container);
 
 	add_child(memnew(HSeparator));
 
@@ -307,129 +336,192 @@ void IndustrialDeviceForm::edit_device(int p_device_index) {
 
 	if (field_enabled) field_enabled->set_pressed(dev.enabled);
 
-	// Populate dynamic params.
-	_populate_dynamic_params(dev.driver, dev.connection_params);
+	// Populate dynamic params from flat + options.
+	_populate_dynamic_params(dev.driver, industrial_device_param_dict(dev));
 
 	// Populate tag table.
 	_populate_tag_table();
 }
 
 void IndustrialDeviceForm::_clear_dynamic_params() {
-	if (params_container) {
-		while (params_container->get_child_count() > 0) {
-			params_container->remove_child(params_container->get_child(0));
+	auto clear_container = [](VBoxContainer *p_container) {
+		if (!p_container) {
+			return;
+		}
+		while (p_container->get_child_count() > 0) {
+			p_container->remove_child(p_container->get_child(0));
+		}
+	};
+	clear_container(common_params_container);
+	clear_container(interface_params_container);
+	clear_container(protocol_params_container);
+	clear_container(tuning_params_container);
+	param_widgets.clear();
+	remote_hmi_row = nullptr;
+}
+
+void IndustrialDeviceForm::_on_location_mode_changed(int /*p_idx*/) {
+	_update_remote_hmi_visibility();
+}
+
+void IndustrialDeviceForm::_update_remote_hmi_visibility() {
+	if (!remote_hmi_row) {
+		return;
+	}
+	bool show_remote = false;
+	if (param_widgets.has("location_mode")) {
+		const FieldWidget &fw = param_widgets["location_mode"];
+		if (OptionButton *ob = Object::cast_to<OptionButton>(fw.widget)) {
+			if (ob->get_selected() >= 0) {
+				show_remote = ob->get_item_text(ob->get_selected()) == "Remote";
+			}
 		}
 	}
-	param_widgets.clear();
+	remote_hmi_row->set_visible(show_remote);
+}
+
+bool IndustrialDeviceForm::_should_show_interface_field(const String &p_key) const {
+	static const char *kEth[] = { "ip", "port", "use_udp", "interface_type" };
+	static const char *kSerial[] = {
+		"serial_port", "baud_rate", "data_bits", "parity", "stop_bits",
+		"flow_control", "station_no", "broadcast_station_no", "use_station_variable",
+	};
+	auto in_list = [](const String &p_key, const char *const *p_keys, int p_count) {
+		for (int i = 0; i < p_count; i++) {
+			if (p_key == p_keys[i]) {
+				return true;
+			}
+		}
+		return false;
+	};
+	const bool is_eth = in_list(p_key, kEth, sizeof(kEth) / sizeof(kEth[0]));
+	const bool is_serial = in_list(p_key, kSerial, sizeof(kSerial) / sizeof(kSerial[0]));
+
+	int driver_idx = field_driver ? field_driver->get_selected() : 0;
+	const DriverMeta *meta = industrial_get_driver_meta(driver_idx);
+	if (!meta) {
+		return true;
+	}
+	const String iface = meta->interface;
+	const bool eth_driver = iface == "ethernet" || iface == "ethernet_ip";
+	const bool serial_driver = iface == "serial_rs232c" || iface == "serial_rs485" ||
+			iface == "df1_fullduplex" || iface == "mpi" || iface == "ppi" || iface == "usb";
+	if (eth_driver) {
+		return is_eth || (!is_eth && !is_serial);
+	}
+	if (serial_driver) {
+		return is_serial || (!is_eth && !is_serial);
+	}
+	return true;
 }
 
 void IndustrialDeviceForm::_populate_dynamic_params(int p_driver, const Dictionary &p_params) {
 	_clear_dynamic_params();
 
-	Vector<IndustrialFieldDef> fields = industrial_get_driver_fields(p_driver);
-	for (const auto &field : fields) {
-		HBoxContainer *row = memnew(HBoxContainer);
+	static const char *kHiddenKeys[] = {
+		"name",
+		"interface_type",
+		"supports_simulator",
+		"enabled",
+	};
+	static const int kHiddenKeyCount = sizeof(kHiddenKeys) / sizeof(kHiddenKeys[0]);
+	Vector<IndustrialFieldDef> visible_fields = industrial_filter_driver_fields(
+			industrial_get_driver_fields(p_driver), kHiddenKeys, kHiddenKeyCount);
 
-		Label *lbl = memnew(Label);
-		lbl->set_text(field.name + ":");
-		lbl->set_custom_minimum_size(Size2(120, 0));
-		row->add_child(lbl);
+	int ip_idx = -1;
+	int port_idx = -1;
+	for (int i = 0; i < visible_fields.size(); i++) {
+		if (visible_fields[i].key == "ip") {
+			ip_idx = i;
+		}
+		if (visible_fields[i].key == "port") {
+			port_idx = i;
+		}
+	}
+	if (ip_idx >= 0 && port_idx >= 0 && port_idx > ip_idx + 1) {
+		IndustrialFieldDef port_field = visible_fields[port_idx];
+		visible_fields.remove_at(port_idx);
+		visible_fields.insert(ip_idx + 1, port_field);
+	}
+
+	HashMap<String, Control *> widgets;
+	for (int i = 0; i < visible_fields.size(); i++) {
+		const IndustrialFieldDef &field = visible_fields[i];
+		const IndustrialDeviceFieldGroup group = industrial_classify_device_field(field.key);
+		if (group == IND_DEVICE_GROUP_INTERFACE && !_should_show_interface_field(field.key)) {
+			continue;
+		}
+
+		VBoxContainer *target = nullptr;
+		switch (group) {
+			case IND_DEVICE_GROUP_COMMON:
+				target = common_params_container;
+				break;
+			case IND_DEVICE_GROUP_INTERFACE:
+				target = interface_params_container;
+				break;
+			case IND_DEVICE_GROUP_TUNING:
+				target = tuning_params_container;
+				break;
+			default:
+				target = protocol_params_container;
+				break;
+		}
+		if (!target) {
+			continue;
+		}
+
+		const Variant current = p_params.has(field.key) ? p_params[field.key] : Variant();
+		const int before = target->get_child_count();
+		industrial_add_param_row(target, field, current, widgets, false);
+
+		if (!widgets.has(field.key)) {
+			continue;
+		}
 
 		FieldWidget fw;
 		fw.key = field.key;
 		fw.data_type = field.data_type;
+		fw.widget = widgets[field.key];
 
-		switch (field.data_type) {
-			case 0: { // int
-				SpinBox *sb = memnew(SpinBox);
-				sb->set_min(field.min_value);
-				sb->set_max(field.max_value > 0 ? field.max_value : 999999);
-				sb->set_step(1);
-				if (p_params.has(field.key)) {
-					sb->set_value(p_params[field.key]);
-				} else {
-					sb->set_value(field.default_value);
-				}
-				sb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-				sb->connect(SceneStringName(value_changed), callable_mp(this, &IndustrialDeviceForm::_on_field_changed_double));
-				fw.widget = sb;
-				row->add_child(sb);
-			} break;
-			case 1: { // float
-				SpinBox *sb = memnew(SpinBox);
-				sb->set_min(field.min_value);
-				sb->set_max(field.max_value > 0 ? field.max_value : 999999.0);
-				sb->set_step(0.01);
-				if (p_params.has(field.key)) {
-					sb->set_value(p_params[field.key]);
-				} else {
-					sb->set_value(field.default_value);
-				}
-				sb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-				sb->connect(SceneStringName(value_changed), callable_mp(this, &IndustrialDeviceForm::_on_field_changed_double));
-				fw.widget = sb;
-				row->add_child(sb);
-			} break;
-			case 2: { // string
-				LineEdit *le = memnew(LineEdit);
-				if (p_params.has(field.key)) {
-					le->set_text(p_params[field.key]);
-				} else {
-					le->set_text(field.default_value);
-				}
-				le->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-				le->connect(SceneStringName(text_changed), callable_mp(this, &IndustrialDeviceForm::_on_field_changed_no_arg));
-				fw.widget = le;
-				row->add_child(le);
-			} break;
-			case 3: { // bool
-				CheckButton *cb = memnew(CheckButton);
-				if (p_params.has(field.key)) {
-					cb->set_pressed(p_params[field.key]);
-				} else {
-					cb->set_pressed(field.default_value);
-				}
-				cb->connect(SceneStringName(toggled), callable_mp(this, &IndustrialDeviceForm::_on_field_changed_bool));
-				fw.widget = cb;
-				row->add_child(cb);
-			} break;
-			case 4: { // choice
-				OptionButton *ob = memnew(OptionButton);
-				for (int ci = 0; ci < field.choices.size(); ci++) {
-					ob->add_item(field.choices[ci]);
-				}
-				String current_val;
-				if (p_params.has(field.key)) {
-					current_val = p_params[field.key];
-				} else {
-					current_val = field.default_value;
-				}
-				for (int ci = 0; ci < field.choices.size(); ci++) {
-					if (field.choices[ci] == current_val) {
-						ob->select(ci);
-						break;
+		if (Control *w = fw.widget) {
+			switch (field.data_type) {
+				case 0:
+				case 1:
+					if (SpinBox *sb = Object::cast_to<SpinBox>(w)) {
+						sb->connect(SceneStringName(value_changed), callable_mp(this, &IndustrialDeviceForm::_on_field_changed_double));
 					}
-				}
-				ob->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-				ob->connect(SceneStringName(item_selected), callable_mp(this, &IndustrialDeviceForm::_on_field_changed_int));
-				fw.widget = ob;
-				row->add_child(ob);
-			} break;
-			default: {
-				LineEdit *le = memnew(LineEdit);
-				le->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-				fw.widget = le;
-				row->add_child(le);
-			} break;
-		}
-
-		if (!field.tooltip.is_empty()) {
-			lbl->set_tooltip_text(field.tooltip);
+					break;
+				case 2:
+					if (LineEdit *le = Object::cast_to<LineEdit>(w)) {
+						le->connect(SceneStringName(text_changed), callable_mp(this, &IndustrialDeviceForm::_on_field_changed_no_arg));
+					}
+					break;
+				case 3:
+					if (CheckButton *cb = Object::cast_to<CheckButton>(w)) {
+						cb->connect(SceneStringName(toggled), callable_mp(this, &IndustrialDeviceForm::_on_field_changed_bool));
+					}
+					break;
+				case 4:
+					if (OptionButton *ob = Object::cast_to<OptionButton>(w)) {
+						ob->connect(SceneStringName(item_selected), callable_mp(this, &IndustrialDeviceForm::_on_field_changed_int));
+						if (field.key == "location_mode") {
+							ob->connect(SceneStringName(item_selected), callable_mp(this, &IndustrialDeviceForm::_on_location_mode_changed));
+						}
+					}
+					break;
+				default:
+					break;
+			}
 		}
 
 		param_widgets[field.key] = fw;
-		params_container->add_child(row);
+		if (field.key == "remote_hmi_ip" && target->get_child_count() > before) {
+			remote_hmi_row = Object::cast_to<Control>(target->get_child(target->get_child_count() - 1));
+		}
 	}
+
+	_update_remote_hmi_visibility();
 }
 
 void IndustrialDeviceForm::_populate_tag_table() {
@@ -534,29 +626,14 @@ void IndustrialDeviceForm::_on_driver_changed(int p_idx) {
 	if (device_index < 0 || project.is_null()) {
 		return;
 	}
-	// Get current connection params before changing driver.
-		Dictionary current_params;
-		for (const auto &kv : param_widgets) {
-			const String &key = kv.key;
-			const FieldWidget &fw = kv.value;
-			if (fw.widget) {
-				switch (fw.data_type) {
-					case 0:
-					case 1:
-						current_params[key] = Object::cast_to<SpinBox>(fw.widget)->get_value();
-						break;
-					case 2:
-						current_params[key] = Object::cast_to<LineEdit>(fw.widget)->get_text();
-						break;
-					case 3:
-						current_params[key] = Object::cast_to<CheckButton>(fw.widget)->is_pressed();
-						break;
-					case 4:
-						current_params[fw.key] = Object::cast_to<OptionButton>(fw.widget)->get_item_text(Object::cast_to<OptionButton>(fw.widget)->get_selected());
-						break;
-				}
-			}
+	// Get current param values before changing driver.
+	Dictionary current_params;
+	for (const KeyValue<String, FieldWidget> &kv : param_widgets) {
+		const FieldWidget &fw = kv.value;
+		if (fw.widget) {
+			current_params[fw.key] = industrial_read_param_widget(fw.widget, fw.data_type);
 		}
+	}
 
 	// Update device driver and repopulate params.
 	IndustrialDeviceData dev = project->get_device(device_index);
@@ -590,27 +667,18 @@ void IndustrialDeviceForm::_do_field_changed() {
 		dev.scan_group = "";
 	}
 
-	// Connection params.
-	for (auto &kv : param_widgets) {
-		const String &key = kv.key;
-		FieldWidget &fw = kv.value;
+	// Dynamic params → flat fields + options.
+	Dictionary params;
+	for (const KeyValue<String, FieldWidget> &kv : param_widgets) {
+		const FieldWidget &fw = kv.value;
 		if (fw.widget) {
-			switch (fw.data_type) {
-				case 0:
-				case 1:
-					dev.connection_params[key] = Object::cast_to<SpinBox>(fw.widget)->get_value();
-					break;
-				case 2:
-					dev.connection_params[key] = Object::cast_to<LineEdit>(fw.widget)->get_text();
-					break;
-				case 3:
-					dev.connection_params[key] = Object::cast_to<CheckButton>(fw.widget)->is_pressed();
-					break;
-				case 4:
-					dev.connection_params[key] = Object::cast_to<OptionButton>(fw.widget)->get_item_text(Object::cast_to<OptionButton>(fw.widget)->get_selected());
-					break;
-			}
+			params[fw.key] = industrial_read_param_widget(fw.widget, fw.data_type);
 		}
+	}
+	industrial_apply_param_dict_to_device(dev, params);
+	industrial_sync_device_connection_params(dev);
+	if (field_driver) {
+		dev.driver_key = industrial_get_driver_key(field_driver->get_selected());
 	}
 
 	project->update_device(device_index, dev);

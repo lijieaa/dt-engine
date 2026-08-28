@@ -50,6 +50,7 @@ sources = [
     "industrial_editor_plugin.cpp",
     "industrial_device_dock.cpp",
     "industrial_tag_dock.cpp",
+    "industrial_device_fields.cpp",
     "industrial_device_form.cpp",
     "industrial_tag_form.cpp",
     "industrial_new_device_dialog.cpp",
