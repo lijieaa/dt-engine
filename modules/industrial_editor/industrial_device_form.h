@@ -26,13 +26,12 @@ public:
 	void clear_form();
 	void set_read_only(bool p_read_only);
 
-	// Populate/refresh the Driver/ScanGroup dropdowns on demand (called
+	// Populate/refresh the Driver dropdown on demand (called
 	// from IndustrialEditorPlugin both on construction and after the
 	// Go runtime /api/v1/drivers HTTP fetch finishes, as well as each
 	// time the project changes so 81 backend drivers are visible even if
 	// the form was built before the HTTP catalog settled).
 	void refresh_driver_dropdown();
-	void refresh_scangroup_dropdown();
 
 private:
 	Ref<IndustrialProject> project;
@@ -43,7 +42,6 @@ private:
 	LineEdit *field_name = nullptr;
 	LineEdit *field_description = nullptr;
 	OptionButton *field_driver = nullptr;
-	OptionButton *field_scan_group = nullptr;
 	CheckButton *field_enabled = nullptr;
 
 	Label *label_interface = nullptr;
@@ -86,7 +84,6 @@ private:
 	void _populate_tag_table();
 	void _update_tag_detail(int p_tag_index);
 	void _on_driver_changed(int p_idx);
-	void _on_scan_group_changed(int p_idx);
 	// Signal dispatch helpers.
 	// NOTE: do NOT overload these — in DEBUG builds callable_mp resolves the
 	// target by the STRINGIFIED method name via ClassDB::get_method(name),

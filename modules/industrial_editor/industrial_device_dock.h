@@ -65,7 +65,7 @@ private:
 	enum ViewMode {
 		VIEW_FLAT,
 		VIEW_BY_DRIVER,
-		VIEW_BY_GROUP,
+		VIEW_BY_ENABLED,
 	};
 	ViewMode view_mode = VIEW_FLAT;
 
@@ -74,7 +74,6 @@ private:
 		ACTION_EDIT = 0,
 		ACTION_DELETE,
 		ACTION_DUPLICATE,
-		ACTION_MOVE_GROUP,
 		ACTION_DIAGNOSE,
 	};
 
@@ -84,7 +83,7 @@ private:
 	void _build_tag_context_menu();
 	void _populate_tree_flat(TreeItem *p_root);
 	void _populate_tree_by_driver(TreeItem *p_root);
-	void _populate_tree_by_group(TreeItem *p_root);
+	void _populate_tree_by_enabled(TreeItem *p_root);
 	TreeItem *_find_item_by_device_index(TreeItem *p_root, int p_idx);
 	void _on_tree_selection_changed();
 	void _on_search_text_changed(const String &p_text);

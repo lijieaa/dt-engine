@@ -1,5 +1,6 @@
 ﻿#include "industrial_project.h"
 #include "industrial_driver_schema.h"
+#include "industrial_csv_io.h"
 
 #include "core/io/file_access.h"
 #include "core/io/json.h"
@@ -1009,6 +1010,10 @@ void IndustrialProject::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("save_to_file", "path"), &IndustrialProject::save_to_file);
 	ClassDB::bind_method(D_METHOD("load_from_file", "path"), &IndustrialProject::load_from_file);
 	ClassDB::bind_method(D_METHOD("get_device_count"), &IndustrialProject::get_device_count);
+	ClassDB::bind_method(D_METHOD("export_devices_csv", "path"), &IndustrialProject::export_devices_csv);
+	ClassDB::bind_method(D_METHOD("export_tags_csv", "path"), &IndustrialProject::export_tags_csv);
+	ClassDB::bind_method(D_METHOD("import_devices_csv", "path"), &IndustrialProject::import_devices_csv);
+	ClassDB::bind_method(D_METHOD("import_tags_csv", "path"), &IndustrialProject::import_tags_csv);
 }
 
 Dictionary IndustrialProject::to_dict() const {
@@ -1136,16 +1141,15 @@ void IndustrialProject::notify_changed() {
 	// For now, UI docks poll the model directly.
 }
 
-// Placeholder CSV implementations (full implementation in industrial_csv_io.cpp).
 Error IndustrialProject::export_devices_csv(const String &p_path) const {
-	return ERR_UNCONFIGURED;
+	return industrial_export_devices_csv(Ref<IndustrialProject>(const_cast<IndustrialProject *>(this)), p_path);
 }
 Error IndustrialProject::export_tags_csv(const String &p_path) const {
-	return ERR_UNCONFIGURED;
+	return industrial_export_tags_csv(Ref<IndustrialProject>(const_cast<IndustrialProject *>(this)), p_path);
 }
 Error IndustrialProject::import_devices_csv(const String &p_path) {
-	return ERR_UNCONFIGURED;
+	return industrial_import_devices_csv(Ref<IndustrialProject>(this), p_path);
 }
 Error IndustrialProject::import_tags_csv(const String &p_path) {
-	return ERR_UNCONFIGURED;
+	return industrial_import_tags_csv(Ref<IndustrialProject>(this), p_path);
 }

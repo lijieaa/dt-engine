@@ -46,10 +46,8 @@ void IndustrialNewDeviceDialog::_build_ui() {
 	main->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	add_child(main);
 
-	// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
-	// 鈶?Basic Info  (Name / Description / Driver/Protocol ONLY 鈥?	//   Scan Group  鈫?managed in Device Dock after creation.
-	//   Enabled     鈫?EBPro +0xc44 defaults to ENABLED; toggled later.)
-	// 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+	// Basic Info: Name / Description / Driver/Protocol.
+	// Enabled defaults to on (EBPro +0xc44); toggled later on the device form.
 	main->add_child(_make_section_title(TTRC("Basic Info")));
 
 	basic_section = memnew(VBoxContainer);

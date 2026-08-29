@@ -186,7 +186,7 @@ void IndustrialDeviceDock::_update_ui_text() {
 		view_mode_selector->clear();
 		view_mode_selector->add_item(TTR("Flat"));
 		view_mode_selector->add_item(TTR("By Driver"));
-		view_mode_selector->add_item(TTR("By Group"));
+		view_mode_selector->add_item(TTR("By Enabled"));
 		view_mode_selector->select(CLAMP(selected, 0, 2));
 	}
 	if (btn_new) {
@@ -239,7 +239,6 @@ void IndustrialDeviceDock::_update_ui_text() {
 		context_menu->add_item(TTR("Delete Device"), ACTION_DELETE);
 		context_menu->add_separator();
 		context_menu->add_item(TTR("Duplicate"), ACTION_DUPLICATE);
-		context_menu->add_item(TTR("Move to Group..."), ACTION_MOVE_GROUP);
 		context_menu->add_separator();
 		context_menu->add_item(TTR("Diagnose"), ACTION_DIAGNOSE);
 	}
@@ -311,8 +310,8 @@ void IndustrialDeviceDock::refresh() {
 		case VIEW_BY_DRIVER:
 			_populate_tree_by_driver(root);
 			break;
-		case VIEW_BY_GROUP:
-			_populate_tree_by_group(root);
+		case VIEW_BY_ENABLED:
+			_populate_tree_by_enabled(root);
 			break;
 	}
 
@@ -375,27 +374,43 @@ void IndustrialDeviceDock::_populate_tree_by_driver(TreeItem *p_root) {
 	}
 }
 
-void IndustrialDeviceDock::_populate_tree_by_group(TreeItem *p_root) {
-	// Task 8 drops VIEW_BY_GROUP. Stub lists every device under Ungrouped.
+void IndustrialDeviceDock::_populate_tree_by_enabled(TreeItem *p_root) {
+	List<int> enabled_indices;
+	List<int> disabled_indices;
 	const int count = project->get_device_count();
-	TreeItem *group = tree->create_item(p_root);
-	group->set_text(0, TTR("Ungrouped") + " (" + itos(count) + ")");
-	group->set_metadata(0, -1);
-	group->set_selectable(0, false);
-	group->set_custom_color(0, Color(0.55f, 0.7f, 0.9f));
-
 	for (int i = 0; i < count; i++) {
-		const auto &dev = project->get_device(i);
-		TreeItem *item = tree->create_item(group);
-		item->set_text(0, dev.name);
-		if (!dev.description.is_empty()) {
-			item->set_tooltip_text(0, dev.description);
+		if (project->get_device(i).enabled) {
+			enabled_indices.push_back(i);
+		} else {
+			disabled_indices.push_back(i);
 		}
-		item->set_text(1, industrial_get_driver_name(dev.driver));
-		item->set_text(2, dev.enabled ? TTR("Enabled") : TTR("Disabled"));
-		item->set_text(3, itos(project->get_tag_count_for_device(i)));
-		item->set_metadata(0, i);
 	}
+
+	auto add_status_group = [&](const String &p_title, const List<int> &p_indices) {
+		if (p_indices.is_empty()) {
+			return;
+		}
+		TreeItem *group = tree->create_item(p_root);
+		group->set_text(0, p_title + " (" + itos(p_indices.size()) + ")");
+		group->set_metadata(0, -1);
+		group->set_selectable(0, false);
+		group->set_custom_color(0, Color(0.55f, 0.7f, 0.9f));
+		for (const int &dev_idx : p_indices) {
+			const auto &dev = project->get_device(dev_idx);
+			TreeItem *item = tree->create_item(group);
+			item->set_text(0, dev.name);
+			if (!dev.description.is_empty()) {
+				item->set_tooltip_text(0, dev.description);
+			}
+			item->set_text(1, industrial_get_driver_name(dev.driver));
+			item->set_text(2, dev.enabled ? TTR("Enabled") : TTR("Disabled"));
+			item->set_text(3, itos(project->get_tag_count_for_device(dev_idx)));
+			item->set_metadata(0, dev_idx);
+		}
+	};
+
+	add_status_group(TTR("Enabled"), enabled_indices);
+	add_status_group(TTR("Disabled"), disabled_indices);
 }
 
 TreeItem *IndustrialDeviceDock::_find_item_by_device_index(TreeItem *p_root, int p_idx) {
@@ -621,7 +636,6 @@ void IndustrialDeviceDock::_on_context_menu_pressed(int p_id) {
 		case ACTION_EDIT: focus_edit_device(); break;
 		case ACTION_DELETE: delete_selected(); break;
 		case ACTION_DUPLICATE: duplicate_selected(); break;
-		case ACTION_MOVE_GROUP: move_to_group(); break;
 		case ACTION_DIAGNOSE: show_diagnose(); break;
 	}
 }
@@ -655,7 +669,7 @@ void IndustrialDeviceDock::show_diagnose() {
 }
 
 void IndustrialDeviceDock::move_to_group() {
-	// TODO: Implement move-to-group dialog.
+	// Scan groups are gone; kept as a no-op for EditorNode::DEVICE_MOVE_GROUP.
 }
 
 void IndustrialDeviceDock::import_csv() {

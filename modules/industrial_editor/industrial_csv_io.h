@@ -5,7 +5,7 @@
 
 class IndustrialProject;
 
-// Export devices to CSV (EBPro-compatible format).
+// Export devices to CSV (no ScanGroup column).
 Error industrial_export_devices_csv(Ref<IndustrialProject> p_project, const String &p_path);
 
 // Export tags to CSV.

@@ -82,23 +82,6 @@ void IndustrialDeviceForm::_build_ui() {
 		refresh_driver_dropdown();
 	}
 
-	// Scan group row.
-	{
-		HBoxContainer *row = memnew(HBoxContainer);
-		Label *lbl = memnew(Label);
-		lbl->set_text(TTR("Scan Group:"));
-		lbl->set_custom_minimum_size(Size2(80, 0));
-		row->add_child(lbl);
-		field_scan_group = memnew(OptionButton);
-		field_scan_group->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-		// Same as driver: populate through shared refresh helper so the
-		// dropdown is re-derived on catalog ready.
-		field_scan_group->connect(SceneStringName(item_selected), callable_mp(this, &IndustrialDeviceForm::_on_scan_group_changed));
-		row->add_child(field_scan_group);
-		add_child(row);
-		refresh_scangroup_dropdown();
-	}
-
 	// Enabled row.
 	{
 		HBoxContainer *row = memnew(HBoxContainer);
@@ -145,13 +128,10 @@ void IndustrialDeviceForm::_build_ui() {
 
 void IndustrialDeviceForm::set_project(Ref<IndustrialProject> p_project) {
 	project = p_project;
-	// Re-derive dropdowns every time the project is set so:
-	//   (a) if the form was constructed before the Go runtime catalog
-	//       arrived, we pick up 81 drivers;
-	//   (b) future scangroup refresh (derived from the project's devices)
-	//       is guaranteed to reflect the latest data set.
+	// Re-derive the driver dropdown every time the project is set so
+	// that if the form was constructed before the Go runtime catalog
+	// arrived, we pick up 81 drivers.
 	refresh_driver_dropdown();
-	refresh_scangroup_dropdown();
 	clear_form();
 }
 
@@ -179,23 +159,12 @@ void IndustrialDeviceForm::refresh_driver_dropdown() {
 	}
 }
 
-void IndustrialDeviceForm::refresh_scangroup_dropdown() {
-	// Task 8 removes Scan Group UI. Stub keeps the widget compiling after model drop.
-	if (!field_scan_group) {
-		return;
-	}
-	field_scan_group->clear();
-	field_scan_group->add_item(TTR("(none)"));
-	field_scan_group->select(0);
-}
-
 void IndustrialDeviceForm::set_read_only(bool p_read_only) {
 	read_only = p_read_only;
 	// Set all fields to read-only.
 	if (field_name) field_name->set_editable(!p_read_only);
 	if (field_description) field_description->set_editable(!p_read_only);
 	if (field_driver) field_driver->set_disabled(p_read_only);
-	if (field_scan_group) field_scan_group->set_disabled(p_read_only);
 	if (field_enabled) field_enabled->set_disabled(p_read_only);
 }
 
@@ -204,7 +173,6 @@ void IndustrialDeviceForm::clear_form() {
 	if (field_name) field_name->set_text("");
 	if (field_description) field_description->set_text("");
 	if (field_driver) field_driver->select(0);
-	if (field_scan_group) field_scan_group->select(0);
 	if (field_enabled) field_enabled->set_pressed(true);
 
 	_clear_dynamic_params();
@@ -231,10 +199,6 @@ void IndustrialDeviceForm::edit_device(int p_device_index) {
 	if (field_description) field_description->set_text(dev.description);
 	if (field_driver && dev.driver >= 0 && dev.driver < industrial_get_driver_count()) {
 		field_driver->select(dev.driver);
-	}
-
-	if (field_scan_group) {
-		refresh_scangroup_dropdown();
 	}
 
 	if (field_enabled) field_enabled->set_pressed(dev.enabled);
@@ -545,10 +509,6 @@ void IndustrialDeviceForm::_on_driver_changed(int p_idx) {
 	project->update_device(device_index, dev);
 
 	_populate_dynamic_params(p_idx, current_params);
-}
-
-void IndustrialDeviceForm::_on_scan_group_changed(int p_idx) {
-	// No-op for now; scan group changes will be committed in _on_field_changed.
 }
 
 void IndustrialDeviceForm::_do_field_changed() {
