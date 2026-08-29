@@ -29,7 +29,7 @@ Error industrial_export_devices_csv(Ref<IndustrialProject> p_project, const Stri
 		csv_line += "\"" + dev.name.replace("\"", "\"\"") + "\",";
 		csv_line += "\"" + dev.description.replace("\"", "\"\"") + "\",";
 		csv_line += industrial_get_driver_name(dev.driver) + ",";
-		csv_line += "\"" + dev.scan_group.replace("\"", "\"\"") + "\",";
+		csv_line += "\"\","; // Task 8: drop ScanGroup column
 		csv_line += dev.enabled ? "true" : "false";
 		csv_line += ",";
 		// Serialize connection params as JSON string.
@@ -66,7 +66,7 @@ Error industrial_export_tags_csv(Ref<IndustrialProject> p_project, const String 
 			csv_line += "\"" + tag.address.replace("\"", "\"\"") + "\",";
 			csv_line += "\"" + tag.name.replace("\"", "\"\"") + "\",";
 			csv_line += industrial_get_data_type_name(tag.data_type) + ",";
-			csv_line += "\"" + tag.scan_group.replace("\"", "\"\"") + "\",";
+			csv_line += "\"\","; // Task 8: drop ScanGroup column
 			csv_line += tag.writable ? "true" : "false";
 			csv_line += ",";
 			csv_line += String::num_real(tag.scale) + ",";
@@ -115,7 +115,6 @@ Error industrial_import_devices_csv(Ref<IndustrialProject> p_project, const Stri
 			}
 		}
 
-		dev.scan_group = fields[3].strip_edges().unquote();
 		dev.enabled = fields[4].strip_edges() == "true";
 
 		if (fields.size() >= 6) {
@@ -173,7 +172,6 @@ Error industrial_import_tags_csv(Ref<IndustrialProject> p_project, const String 
 			}
 		}
 
-		if (fields.size() >= 5) tag.scan_group = fields[4].strip_edges().unquote();
 		if (fields.size() >= 6) tag.writable = fields[5].strip_edges() == "true";
 		if (fields.size() >= 7) tag.scale = fields[6].strip_edges().to_float();
 		if (fields.size() >= 8) tag.unit = fields[7].strip_edges().unquote();

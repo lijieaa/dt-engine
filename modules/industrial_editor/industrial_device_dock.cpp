@@ -376,39 +376,25 @@ void IndustrialDeviceDock::_populate_tree_by_driver(TreeItem *p_root) {
 }
 
 void IndustrialDeviceDock::_populate_tree_by_group(TreeItem *p_root) {
-	// Group device indices by scan_group. Empty scan_group → "Ungrouped".
-	HashMap<String, List<int>> group_map;
-	int count = project->get_device_count();
+	// Task 8 drops VIEW_BY_GROUP. Stub lists every device under Ungrouped.
+	const int count = project->get_device_count();
+	TreeItem *group = tree->create_item(p_root);
+	group->set_text(0, TTR("Ungrouped") + " (" + itos(count) + ")");
+	group->set_metadata(0, -1);
+	group->set_selectable(0, false);
+	group->set_custom_color(0, Color(0.55f, 0.7f, 0.9f));
+
 	for (int i = 0; i < count; i++) {
-		String group_name = project->get_device(i).scan_group;
-		if (group_name.is_empty()) {
-			group_name = TTR("Ungrouped");
+		const auto &dev = project->get_device(i);
+		TreeItem *item = tree->create_item(group);
+		item->set_text(0, dev.name);
+		if (!dev.description.is_empty()) {
+			item->set_tooltip_text(0, dev.description);
 		}
-		group_map[group_name].push_back(i);
-	}
-
-	for (const KeyValue<String, List<int>> &kv : group_map) {
-		const String &group_name = kv.key;
-		const List<int> &indices = kv.value;
-
-		TreeItem *group = tree->create_item(p_root);
-		group->set_text(0, group_name + " (" + itos(indices.size()) + ")");
-		group->set_metadata(0, -1);
-		group->set_selectable(0, false);
-		group->set_custom_color(0, Color(0.55f, 0.7f, 0.9f));
-
-		for (const int &dev_idx : indices) {
-			const auto &dev = project->get_device(dev_idx);
-			TreeItem *item = tree->create_item(group);
-			item->set_text(0, dev.name);
-			if (!dev.description.is_empty()) {
-				item->set_tooltip_text(0, dev.description);
-			}
-			item->set_text(1, industrial_get_driver_name(dev.driver));
-			item->set_text(2, dev.enabled ? TTR("Enabled") : TTR("Disabled"));
-			item->set_text(3, itos(project->get_tag_count_for_device(dev_idx)));
-			item->set_metadata(0, dev_idx);
-		}
+		item->set_text(1, industrial_get_driver_name(dev.driver));
+		item->set_text(2, dev.enabled ? TTR("Enabled") : TTR("Disabled"));
+		item->set_text(3, itos(project->get_tag_count_for_device(i)));
+		item->set_metadata(0, i);
 	}
 }
 

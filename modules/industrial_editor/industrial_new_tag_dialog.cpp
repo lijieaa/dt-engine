@@ -375,7 +375,7 @@ void IndustrialNewTagDialog::_select_option_by_metadata(OptionButton *p_btn, con
 	}
 }
 
-void IndustrialNewTagDialog::_select_option_by_id(PackedStringArray &p_ids, OptionButton *p_btn, const String &p_id) {
+void IndustrialNewTagDialog::_select_option_by_id(PackedStringArray &p_ids, OptionButton *p_btn, const String &p_id) const {
 	if (!p_btn || p_id.is_empty()) {
 		return;
 	}

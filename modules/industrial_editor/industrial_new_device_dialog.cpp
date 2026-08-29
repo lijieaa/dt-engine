@@ -425,7 +425,8 @@ void IndustrialNewDeviceDialog::_on_tagfield_fetched(bool /*p_success*/) {
 	// Kept for catalog callbacks; initial tags UI removed.
 }
 
-// 瑙ｆ瀽 driver_idx 鈫?driver_key锛氫紭鍏?runtime 鐩綍锛屽け璐ュ洖閫€鍒?81 鏉＄洰 fallback銆?String IndustrialNewDeviceDialog::_resolve_driver_key(int p_driver_idx) const {
+// Resolve driver_idx → driver_key: prefer runtime catalog, else 81-entry fallback.
+String IndustrialNewDeviceDialog::_resolve_driver_key(int p_driver_idx) const {
 	String key = IndustrialRuntimeClient::get_driver_key(p_driver_idx);
 	if (key.is_empty()) {
 		key = industrial_get_driver_key(p_driver_idx);
@@ -597,11 +598,8 @@ void IndustrialNewDeviceDialog::_on_confirm_pressed() {
 	// EBPro 搂2.1 +0xc44: new devices are ENABLED by default.  If user wants to
 	// disable before first connect, they do so in Device Dock after creation.
 	dev.enabled = true;
-	// Scan Group: left empty on creation; user can assign afterwards via the
-	// Device Dock editor (not part of EBPro's "create device" dialog).
-	dev.scan_group = "";
 
-	// 鈹€鈹€ Collect UI params 鈫?flat fields + options (搂3.2) 鈹€鈹€
+	// Collect UI params → flat fields + options.
 	Dictionary params;
 	_collect_params(params);
 

@@ -218,7 +218,6 @@ void IndustrialBatchGenDialog::_on_generate_pressed() {
 		tag.writable = write;
 		tag.scale = 1.0;
 		tag.unit = "";
-		tag.scan_group = "";
 
 		project->add_tag(device_index, tag);
 		generated_tags.append(tag_name);

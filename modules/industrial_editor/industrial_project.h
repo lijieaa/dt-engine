@@ -60,7 +60,6 @@ struct IndustrialTagData {
 	int length = 0;
 	String symbol;
 	int data_type = TYPE_BOOL; // legacy UI enum; compat read only on wire
-	String scan_group;
 	bool writable = false;
 	int poll_interval = 0;
 	double scale = 1.0; // legacy scalar scale
@@ -98,7 +97,6 @@ struct IndustrialDeviceData {
 	int poll_interval = 0;
 	int block_size_words = 0;
 	Dictionary options;
-	String scan_group;
 	bool enabled = true;
 	Dictionary connection_params; // deprecated: UI bridge; flat+options is authoritative
 	Vector<IndustrialTagData> tags;
@@ -118,14 +116,8 @@ Dictionary industrial_device_param_dict(const IndustrialDeviceData &p_dev);
 void industrial_apply_param_dict_to_device(IndustrialDeviceData &p_dev, const Dictionary &p_params);
 void industrial_sync_device_connection_params(IndustrialDeviceData &p_dev);
 
-// Scan group definition.
-struct IndustrialScanGroup {
-	String name;
-	int interval_ms = 500;
-};
-
 // IndustrialProject is the in-memory project model for device/tag management.
-// It owns the device list, tag list, and scan groups. All UI docks and dialogs
+// It owns the device list and nested tags. All UI docks and dialogs
 // interact through this model.
 class IndustrialProject : public RefCounted {
 	GDCLASS(IndustrialProject, RefCounted);
@@ -155,19 +147,17 @@ public:
 
 	int get_tag_count_for_device(int p_device_index) const;
 
-	// --- Scan group operations ---
-	int get_scan_group_count() const;
-	const IndustrialScanGroup &get_scan_group(int p_index) const;
-
-	bool add_scan_group(const IndustrialScanGroup &p_group);
-	bool update_scan_group(int p_index, const IndustrialScanGroup &p_group);
-	bool remove_scan_group(int p_index);
-
 	// --- Persistence ---
 	Error save_to_file(const String &p_path);
 	Error load_from_file(const String &p_path);
 	Dictionary to_dict() const;
-	void from_dict(const Dictionary &p_data);
+	bool from_dict(const Dictionary &p_data);
+
+	// --- Binding ---
+protected:
+	static void _bind_methods();
+
+public:
 
 	// --- Validation ---
 	Array validate() const; // Returns array of error messages.
@@ -183,7 +173,6 @@ public:
 
 private:
 	Vector<IndustrialDeviceData> devices;
-	Vector<IndustrialScanGroup> scan_groups;
 
 	static IndustrialTagData s_empty_tag;
 	static IndustrialDeviceData s_empty_device;

@@ -180,36 +180,12 @@ void IndustrialDeviceForm::refresh_driver_dropdown() {
 }
 
 void IndustrialDeviceForm::refresh_scangroup_dropdown() {
-	if (!field_scan_group) return;
-	const int sel_idx = field_scan_group->get_selected();
-	const String saved = (sel_idx >= 0 && sel_idx < field_scan_group->get_item_count())
-			? field_scan_group->get_item_text(sel_idx)
-			: String();
+	// Task 8 removes Scan Group UI. Stub keeps the widget compiling after model drop.
+	if (!field_scan_group) {
+		return;
+	}
 	field_scan_group->clear();
 	field_scan_group->add_item(TTR("(none)"));
-	if (project.is_valid()) {
-		// Collect existing scan groups across all devices; sort for determinism.
-		Vector<String> groups;
-		HashSet<String> seen;
-		for (int i = 0; i < project->get_device_count(); i++) {
-			const String &g = project->get_device(i).scan_group;
-			if (g.length() == 0) continue;
-			if (seen.has(g)) continue;
-			seen.insert(g);
-			groups.push_back(g);
-		}
-		groups.sort();
-		for (int i = 0; i < groups.size(); i++) {
-			field_scan_group->add_item(groups[i]);
-		}
-	}
-	// Try to restore selection.
-	for (int i = 0; i < field_scan_group->get_item_count(); i++) {
-		if (field_scan_group->get_item_text(i) == saved) {
-			field_scan_group->select(i);
-			return;
-		}
-	}
 	field_scan_group->select(0);
 }
 
@@ -257,27 +233,8 @@ void IndustrialDeviceForm::edit_device(int p_device_index) {
 		field_driver->select(dev.driver);
 	}
 
-	// Update scan group options.
 	if (field_scan_group) {
-		// Remove old items except the first "(none)".
-		while (field_scan_group->get_item_count() > 1) {
-			field_scan_group->remove_item(field_scan_group->get_item_count() - 1);
-		}
-		int sg_count = project->get_scan_group_count();
-		for (int i = 0; i < sg_count; i++) {
-			field_scan_group->add_item(project->get_scan_group(i).name);
-		}
-		// Select the device's scan group.
-		int sel_idx = 0;
-		if (!dev.scan_group.is_empty()) {
-			for (int i = 0; i < field_scan_group->get_item_count(); i++) {
-				if (field_scan_group->get_item_text(i) == dev.scan_group) {
-					sel_idx = i;
-					break;
-				}
-			}
-		}
-		field_scan_group->select(sel_idx);
+		refresh_scangroup_dropdown();
 	}
 
 	if (field_enabled) field_enabled->set_pressed(dev.enabled);
@@ -606,13 +563,6 @@ void IndustrialDeviceForm::_do_field_changed() {
 	if (field_description) dev.description = field_description->get_text();
 	if (field_driver) dev.driver = field_driver->get_selected();
 	if (field_enabled) dev.enabled = field_enabled->is_pressed();
-
-	// Scan group.
-	if (field_scan_group && field_scan_group->get_selected() > 0) {
-		dev.scan_group = field_scan_group->get_item_text(field_scan_group->get_selected());
-	} else {
-		dev.scan_group = "";
-	}
 
 	// Dynamic params → flat fields + options.
 	Dictionary params;

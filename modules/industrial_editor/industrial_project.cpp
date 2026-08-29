@@ -3,6 +3,8 @@
 
 #include "core/io/file_access.h"
 #include "core/io/json.h"
+#include "core/error/error_macros.h"
+#include "core/object/class_db.h"
 #include "core/variant/variant.h"
 
 namespace {
@@ -398,7 +400,6 @@ Dictionary device_to_dict(const IndustrialDeviceData &p_dev) {
 		dd["driver"] = driver_wire;
 	}
 	dd["enabled"] = dev.enabled;
-	put_if_non_empty(dd, "scan_group", dev.scan_group);
 
 	put_if_non_empty(dd, "dev_type", dev.dev_type == "device" ? String() : dev.dev_type);
 	put_if_non_empty(dd, "location_mode", dev.location_mode == "Local" ? String() : dev.location_mode);
@@ -462,7 +463,6 @@ Dictionary device_to_dict(const IndustrialDeviceData &p_dev) {
 			td["writable"] = true;
 		}
 		put_if_nonzero(td, "poll_interval", tag.poll_interval);
-		put_if_non_empty(td, "scan_group", tag.scan_group);
 		put_if_non_empty(td, "unit", tag.unit);
 		if (!tag.scale_obj.is_empty()) {
 			td["scale"] = tag.scale_obj;
@@ -485,7 +485,6 @@ IndustrialTagData tag_from_dict(const Dictionary &p_td) {
 	tag.db_number = dict_get_int(p_td, "db_number");
 	tag.length = dict_get_int(p_td, "length");
 	tag.symbol = dict_get_string(p_td, "symbol");
-	tag.scan_group = dict_get_string(p_td, "scan_group");
 	tag.writable = dict_get_bool(p_td, "writable");
 	tag.poll_interval = dict_get_int(p_td, "poll_interval");
 	tag.unit = dict_get_string(p_td, "unit");
@@ -549,7 +548,6 @@ IndustrialDeviceData device_from_dict(const Dictionary &p_dd) {
 	dev.max_write_words = dict_get_int(p_dd, "max_write_words");
 	dev.poll_interval = dict_get_int(p_dd, "poll_interval");
 	dev.block_size_words = dict_get_int(p_dd, "block_size_words");
-	dev.scan_group = dict_get_string(p_dd, "scan_group");
 	dev.options = p_dd.get("options", Dictionary());
 	dev.connection_params = p_dd.get("connection_params", Dictionary());
 
@@ -565,6 +563,41 @@ IndustrialDeviceData device_from_dict(const Dictionary &p_dd) {
 		}
 	}
 	return dev;
+}
+
+bool dict_has_forbidden_scan_group_keys(const Dictionary &p_dict) {
+	return p_dict.has("scan_groups") || p_dict.has("scan_group");
+}
+
+bool array_items_have_forbidden_scan_group_keys(const Array &p_items, bool p_check_nested_tags) {
+	for (int i = 0; i < p_items.size(); i++) {
+		if (p_items[i].get_type() != Variant::DICTIONARY) {
+			continue;
+		}
+		Dictionary item = p_items[i];
+		if (dict_has_forbidden_scan_group_keys(item)) {
+			return true;
+		}
+		if (p_check_nested_tags) {
+			Array nested_tags = item.get("tags", Array());
+			if (array_items_have_forbidden_scan_group_keys(nested_tags, false)) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool project_dict_has_forbidden_scan_group_keys(const Dictionary &p_data) {
+	if (dict_has_forbidden_scan_group_keys(p_data)) {
+		return true;
+	}
+	Array devices_arr = p_data.get("devices", Array());
+	if (array_items_have_forbidden_scan_group_keys(devices_arr, true)) {
+		return true;
+	}
+	Array tags_arr = p_data.get("tags", Array());
+	return array_items_have_forbidden_scan_group_keys(tags_arr, false);
 }
 
 } // namespace
@@ -858,7 +891,7 @@ bool IndustrialProject::update_device(int p_index, const IndustrialDeviceData &p
 	if (p_device.name.is_empty()) {
 		return false;
 	}
-	devices[p_index] = p_device;
+	devices.set(p_index, p_device);
 	return true;
 }
 
@@ -931,7 +964,7 @@ bool IndustrialProject::add_tag(int p_device_index, const IndustrialTagData &p_t
 			return false;
 		}
 	}
-	devices[p_device_index].tags.push_back(p_tag);
+	devices.ptrw()[p_device_index].tags.push_back(p_tag);
 	return true;
 }
 
@@ -939,14 +972,14 @@ bool IndustrialProject::update_tag(int p_device_index, int p_tag_index, const In
 	if (p_device_index < 0 || p_device_index >= (int)devices.size()) {
 		return false;
 	}
-	auto &tags = devices[p_device_index].tags;
+	Vector<IndustrialTagData> &tags = devices.ptrw()[p_device_index].tags;
 	if (p_tag_index < 0 || p_tag_index >= (int)tags.size()) {
 		return false;
 	}
 	if (p_tag.name.is_empty()) {
 		return false;
 	}
-	tags[p_tag_index] = p_tag;
+	tags.set(p_tag_index, p_tag);
 	return true;
 }
 
@@ -954,7 +987,7 @@ bool IndustrialProject::remove_tag(int p_device_index, int p_tag_index) {
 	if (p_device_index < 0 || p_device_index >= (int)devices.size()) {
 		return false;
 	}
-	auto &tags = devices[p_device_index].tags;
+	Vector<IndustrialTagData> &tags = devices.ptrw()[p_device_index].tags;
 	if (p_tag_index < 0 || p_tag_index >= (int)tags.size()) {
 		return false;
 	}
@@ -969,96 +1002,45 @@ int IndustrialProject::get_tag_count_for_device(int p_device_index) const {
 	return (int)devices[p_device_index].tags.size();
 }
 
-int IndustrialProject::get_scan_group_count() const {
-	return (int)scan_groups.size();
-}
-
-const IndustrialScanGroup &IndustrialProject::get_scan_group(int p_index) const {
-	if (p_index < 0 || p_index >= (int)scan_groups.size()) {
-		static IndustrialScanGroup s_empty;
-		return s_empty;
-	}
-	return scan_groups[p_index];
-}
-
-bool IndustrialProject::add_scan_group(const IndustrialScanGroup &p_group) {
-	if (p_group.name.is_empty()) {
-		return false;
-	}
-	for (const auto &g : scan_groups) {
-		if (g.name == p_group.name) {
-			return false;
-		}
-	}
-	scan_groups.push_back(p_group);
-	return true;
-}
-
-bool IndustrialProject::update_scan_group(int p_index, const IndustrialScanGroup &p_group) {
-	if (p_index < 0 || p_index >= (int)scan_groups.size()) {
-		return false;
-	}
-	if (p_group.name.is_empty()) {
-		return false;
-	}
-	scan_groups[p_index] = p_group;
-	return true;
-}
-
-bool IndustrialProject::remove_scan_group(int p_index) {
-	if (p_index < 0 || p_index >= (int)scan_groups.size()) {
-		return false;
-	}
-	scan_groups.remove_at(p_index);
-	return true;
+void IndustrialProject::_bind_methods() {
+	ClassDB::bind_method(D_METHOD("to_dict"), &IndustrialProject::to_dict);
+	ClassDB::bind_method(D_METHOD("from_dict", "data"), &IndustrialProject::from_dict);
+	ClassDB::bind_method(D_METHOD("validate"), &IndustrialProject::validate);
+	ClassDB::bind_method(D_METHOD("save_to_file", "path"), &IndustrialProject::save_to_file);
+	ClassDB::bind_method(D_METHOD("load_from_file", "path"), &IndustrialProject::load_from_file);
+	ClassDB::bind_method(D_METHOD("get_device_count"), &IndustrialProject::get_device_count);
 }
 
 Dictionary IndustrialProject::to_dict() const {
 	Dictionary result;
-
-	if (!scan_groups.is_empty()) {
-		Array groups_arr;
-		for (const auto &g : scan_groups) {
-			Dictionary gd;
-			gd["name"] = g.name;
-			gd["interval_ms"] = g.interval_ms;
-			groups_arr.append(gd);
-		}
-		result["scan_groups"] = groups_arr;
-	}
-
 	Array devices_arr;
 	for (const auto &dev : devices) {
 		devices_arr.append(device_to_dict(dev));
 	}
 	result["devices"] = devices_arr;
-
 	return result;
 }
 
-void IndustrialProject::from_dict(const Dictionary &p_data) {
-	devices.clear();
-	scan_groups.clear();
-
-	Array groups_arr = p_data.get("scan_groups", Array());
-	for (int i = 0; i < groups_arr.size(); i++) {
-		Dictionary gd = groups_arr[i];
-		IndustrialScanGroup g;
-		g.name = gd.get("name", "");
-		g.interval_ms = gd.get("interval_ms", 500);
-		if (!g.name.is_empty()) {
-			scan_groups.push_back(g);
-		}
+bool IndustrialProject::from_dict(const Dictionary &p_data) {
+	if (project_dict_has_forbidden_scan_group_keys(p_data)) {
+		ERR_PRINT(TTR("Obsolete key scan_group/scan_groups is not allowed."));
+		return false;
 	}
+
+	devices.clear();
 
 	Array devices_arr = p_data.get("devices", Array());
 	for (int i = 0; i < devices_arr.size(); i++) {
+		if (devices_arr[i].get_type() != Variant::DICTIONARY) {
+			continue;
+		}
 		Dictionary dd = devices_arr[i];
 		IndustrialDeviceData dev = device_from_dict(dd);
 		if (!dev.name.is_empty()) {
 			devices.push_back(dev);
 		}
 	}
+	return true;
 }
 
 Error IndustrialProject::save_to_file(const String &p_path) {
@@ -1087,21 +1069,14 @@ Error IndustrialProject::load_from_file(const String &p_path) {
 	if (parsed.get_type() != Variant::DICTIONARY) {
 		return ERR_INVALID_DATA;
 	}
-	from_dict(parsed);
+	if (!from_dict(parsed)) {
+		return ERR_INVALID_DATA;
+	}
 	return OK;
 }
 
 Array IndustrialProject::validate() const {
 	Array errors;
-
-	// Check duplicate scan group names.
-	for (int i = 0; i < (int)scan_groups.size(); i++) {
-		for (int j = i + 1; j < (int)scan_groups.size(); j++) {
-			if (scan_groups[i].name == scan_groups[j].name) {
-				errors.append(vformat(TTR("Duplicate scan group name: '%s'."), scan_groups[i].name));
-			}
-		}
-	}
 
 	// Check devices.
 	for (int i = 0; i < (int)devices.size(); i++) {
@@ -1118,18 +1093,6 @@ Array IndustrialProject::validate() const {
 			}
 		} else if (dev.driver >= industrial_get_driver_count()) {
 			errors.append(vformat(TTR("Device '%s' has invalid driver."), dev.name));
-		}
-		if (!dev.scan_group.is_empty()) {
-			bool found = false;
-			for (const auto &g : scan_groups) {
-				if (g.name == dev.scan_group) {
-					found = true;
-					break;
-				}
-			}
-			if (!found) {
-				errors.append(vformat(TTR("Device '%s' references missing scan group '%s'."), dev.name, dev.scan_group));
-			}
 		}
 
 		// Check tags within device.
