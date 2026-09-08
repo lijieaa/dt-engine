@@ -4,7 +4,10 @@
 Sources:
 - register_types.cpp             — GDREGISTER_CLASS registration
 - industrial_editor_plugin.cpp   — EditorPlugin subclass (menu + dock wiring)
-- industrial_device_dock.cpp     — Device list dock (Tree + search + buttons)
+- industrial_device_dock.cpp     — Device list dock (custom rows + search + buttons)
+- industrial_device_list_row.cpp — PM/mockup device list row
+- industrial_tag_list_row.cpp   — PM/mockup tag list row
+- industrial_vendor_icons.cpp   — category_vendor -> badge color/mark
 - industrial_tag_dock.cpp       — Tag browser dock (global Tree + filter)
 - industrial_device_form.cpp     — Device property form (dynamic fields)
 - industrial_tag_form.cpp       — Tag property form
@@ -45,17 +48,10 @@ env_ie = env_modules.Clone()
 # cl.exe considers those incompatible with /utf-8 (D8016), see prior build log.
 env_ie.AppendUnique(CCFLAGS=["/utf-8"])
 
+# Runtime + export template: Tag widgets, project model, runtime HTTP client.
+# Editor docks/dialogs use TTR / EditorPlugin and compile only for editor_build.
 sources = [
     "register_types.cpp",
-    "industrial_editor_plugin.cpp",
-    "industrial_device_dock.cpp",
-    "industrial_tag_dock.cpp",
-    "industrial_device_fields.cpp",
-    "industrial_device_form.cpp",
-    "industrial_tag_form.cpp",
-    "industrial_new_device_dialog.cpp",
-    "industrial_new_tag_dialog.cpp",
-    "industrial_batch_gen_dialog.cpp",
     "industrial_project.cpp",
     "industrial_driver_schema.cpp",
     "industrial_runtime_client.cpp",
@@ -67,6 +63,39 @@ sources = [
     "widget_meter.cpp",
     "widget_recipe.cpp",
     "widget_macro.cpp",
+    "tag_widget_util.cpp",
+    "tag_label.cpp",
+    "tag_num_display.cpp",
+    "tag_num_input.cpp",
+    "tag_num_keypad.cpp",
+    "tag_lamp.cpp",
+    "tag_switch.cpp",
+    "tag_meter.cpp",
+    "tag_bar.cpp",
+    "tag_gauge.cpp",
+    "tag_trend.cpp",
+    "tag_alarm_list.cpp",
+    "tag_recipe.cpp",
+    "tag_macro_button.cpp",
 ]
+
+if env.editor_build:
+    sources += [
+        "industrial_editor_plugin.cpp",
+        "industrial_device_dock.cpp",
+        "industrial_device_list_row.cpp",
+        "industrial_tag_list_row.cpp",
+        "industrial_vendor_icons.cpp",
+        "industrial_tag_dock.cpp",
+        "industrial_device_fields.cpp",
+        "industrial_inspector_widgets.cpp",
+        "industrial_device_form.cpp",
+        "industrial_tag_form.cpp",
+        "industrial_new_device_dialog.cpp",
+        "industrial_device_diagnose_dialog.cpp",
+        "industrial_new_tag_dialog.cpp",
+        "industrial_batch_gen_dialog.cpp",
+        "industrial_script_dialog.cpp",
+    ]
 
 env_ie.add_source_files(env.modules_sources, sources)

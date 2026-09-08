@@ -8,6 +8,19 @@
 #include "widget_meter.h"
 #include "widget_recipe.h"
 #include "widget_trend.h"
+#include "tag_alarm_list.h"
+#include "tag_bar.h"
+#include "tag_gauge.h"
+#include "tag_label.h"
+#include "tag_lamp.h"
+#include "tag_macro_button.h"
+#include "tag_meter.h"
+#include "tag_num_display.h"
+#include "tag_num_input.h"
+#include "tag_num_keypad.h"
+#include "tag_recipe.h"
+#include "tag_switch.h"
+#include "tag_trend.h"
 
 #include "core/config/project_settings.h"
 #include "core/object/class_db.h"
@@ -15,26 +28,24 @@
 
 #ifdef TOOLS_ENABLED
 #  include "industrial_editor_plugin.h"
+#  include "industrial_device_list_row.h"
+#  include "industrial_tag_list_row.h"
 #  include "editor/plugins/editor_plugin.h"
 #  include "editor/settings/editor_settings.h"
 #endif
 
 void initialize_industrial_editor_module(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
-		// Layer 3 - ProjectSetting: "industrial/runtime/url"
-		// 注册在 CORE 层（在 ProjectSettings 初始化之后、SCENE 之前），
-		// 使 editor + template + exported runtime 三类 target 都能识别
-		// 该 setting 并在 project.godot 中持久化 / 随包导出。
+		// ProjectSetting "industrial/runtime/url" is the editor UI input.
+		// On industrial project save it is written into industrial/project.json
+		// as "runtime_url"; get_runtime_url() reads project.json (not this setting).
 		ProjectSettings *ps = ProjectSettings::get_singleton();
 		if (ps != nullptr) {
 			const String key = IndustrialRuntimeClient::kProjectSettingKey;
 			if (!ps->has_setting(key)) {
 				ps->set_setting(key, IndustrialRuntimeClient::kDefaultUrl);
 			}
-			// Always set initial value so Inspector / Project Settings dialog
-			// treats "factory default" as the known constant.
 			ps->set_initial_value(key, String(IndustrialRuntimeClient::kDefaultUrl));
-			// Add property metadata: plain STRING with placeholder hint text.
 			ps->set_custom_property_info(
 				PropertyInfo(Variant::STRING,
 							  key,
@@ -53,7 +64,23 @@ void initialize_industrial_editor_module(ModuleInitializationLevel p_level) {
 		GDREGISTER_CLASS(WidgetMeter);
 		GDREGISTER_CLASS(WidgetRecipe);
 		GDREGISTER_CLASS(WidgetMacro);
+		// Engine-wide HMI tag widgets (available in Create Node for every project).
+		GDREGISTER_CLASS(TagLabel);
+		GDREGISTER_CLASS(TagNumDisplay);
+		GDREGISTER_CLASS(TagNumInput);
+		GDREGISTER_CLASS(TagNumKeypad);
+		GDREGISTER_CLASS(TagLamp);
+		GDREGISTER_CLASS(TagSwitch);
+		GDREGISTER_CLASS(TagMeter);
+		GDREGISTER_CLASS(TagBar);
+		GDREGISTER_CLASS(TagGauge);
+		GDREGISTER_CLASS(TagTrend);
+		GDREGISTER_CLASS(TagAlarmList);
+		GDREGISTER_CLASS(TagRecipe);
+		GDREGISTER_CLASS(TagMacroButton);
 #  ifdef TOOLS_ENABLED
+		GDREGISTER_CLASS(IndustrialDeviceListRow);
+		GDREGISTER_CLASS(IndustrialTagListRow);
 		GDREGISTER_CLASS(IndustrialEditorPlugin);
 #  endif
 		return;

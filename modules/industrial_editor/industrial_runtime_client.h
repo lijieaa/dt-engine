@@ -41,12 +41,20 @@ public:
 	/// Resolved from (highest-priority wins; all optional):
 	///   1. Cmdline arg:     --runtime-url=<url>
 	///   2. Env var:         GD_RUNTIME_URL
-	///   3. ProjectSettings: industrial/runtime/url   (随 project.godot 导出 → 可用在打包后的程序)
-	///   4. EditorSettings:  industrial/runtime/url   (仅编辑器态，存用户全局偏好)
-	///   5. Fallback:        http://127.0.0.1:8080
+	///   3. industrial/project.json "runtime_url"
+	///      (edited via ProjectSettings industrial/runtime/url, synced on save)
+	///   4. Fallback:        http://127.0.0.1:8080
 	///
 	/// The URL should NOT include a trailing slash.
 	static String get_runtime_url();
+
+	/// Push URL loaded from industrial/project.json into the client cache.
+	static void set_project_runtime_url(const String &p_url);
+
+	/// Read ProjectSettings industrial/runtime/url (editor input); empty if unset.
+	static String get_project_setting_runtime_url();
+	/// Write ProjectSettings so the Project Settings UI matches project.json.
+	static void set_project_setting_runtime_url(const String &p_url);
 
 	/// Public constant so settings dialogs, docs and code can reuse the
 	/// exact setting keys used by layers 3 and 4 above.
@@ -141,7 +149,37 @@ public:
 	/// Posts nested project JSON to POST /api/v1/project/import (apply defaults
 	/// true on the backend when omitted). Body is the full import payload
 	/// (devices with tags, optional project_id/name, optional apply).
-	static void import_project(const String &p_json_body, Node *p_owner);
+	/// When p_on_success is valid it is invoked once after HTTP 200.
+	static void import_project(const String &p_json_body, Node *p_owner,
+			const Callable &p_on_success = Callable());
+
+	/// Session-refcount collect control: POST /api/v1/runtime/collect.
+	static void collect_acquire(const String &p_session_id, Node *p_owner,
+			const Callable &p_on_done = Callable());
+	static void collect_release(const String &p_session_id, Node *p_owner,
+			const Callable &p_on_done = Callable());
+
+	/// Async POST /api/v1/tags/:name/write with JSON {"value": ...}.
+	/// Used by Tag* widgets when editor canvas has no /root/Runtime WS host.
+	/// Returns true when the HTTP request was queued (not when PLC ACKed).
+	/// Callback signature: (bool ok, int http_code, String body)
+	static bool write_tag(const String &p_tag, const Variant &p_value, Node *p_owner,
+			const Callable &p_on_done = Callable());
+
+	/// Async GET /api/v1/devices.
+	/// Callback signature: (bool ok, int http_code, Dictionary data)
+	/// where data has key "devices" (Array of Dict with id/status/error/...).
+	static void fetch_devices(Node *p_owner, const Callable &p_callback);
+
+	/// Async GET /api/v1/diagnostics/devices/:id.
+	/// Callback signature: (bool ok, int http_code, Dictionary data).
+	/// ok=false covers transport failure; http_code may be 404 when device
+	/// is not present in the runtime.
+	static void fetch_device_diagnostics(const String &p_device_id, Node *p_owner, const Callable &p_callback);
+
+	/// Async GET /api/v1/diagnostics/runtime.
+	/// Callback signature: (bool ok, int http_code, Dictionary data).
+	static void fetch_runtime_diagnostics(Node *p_owner, const Callable &p_callback);
 
 	/// Returns the cached/fallback catalog Dictionary for p_driver_key.
 	/// Top-level keys mirror the backend JSON:
@@ -151,7 +189,7 @@ public:
 	///                    word_width,default_data_format,area_group,
 	///                    requires_db,has_length,internal_type_code,area_byte}) /
 	///   data_formats (Array of Dict{id,label_msgid,label_zh,bvar14_hex,
-	///                     byte_width,category,ebpro_prefix}) /
+	///                     byte_width,category,prefix}) /
 	///   symbolic_import (Dict, empty when not symbolic: supported,
 	///                    project_file_exts (Array<String>),
 	///                    tag_name_hints (Array<String>))
@@ -226,8 +264,23 @@ private:
 			const PackedStringArray &p_headers, const PackedByteArray &p_body);
 	static void _on_import_project_completed(int p_result, int p_response_code,
 			const PackedStringArray &p_headers, const PackedByteArray &p_body);
+	static void _on_collect_completed(int p_result, int p_response_code,
+			const PackedStringArray &p_headers, const PackedByteArray &p_body,
+			const Callable &p_callback, ObjectID p_request_id);
+	static void _on_write_tag_completed(int p_result, int p_response_code,
+			const PackedStringArray &p_headers, const PackedByteArray &p_body,
+			const Callable &p_callback, ObjectID p_request_id, const String &p_tag);
+
+
+	static void _on_json_get_completed(int p_result, int p_response_code,
+			const PackedStringArray &p_headers, const PackedByteArray &p_body,
+			const Callable &p_callback, ObjectID p_request_id);
 
 	static Callable s_create_project_success_callback;
+	static Callable s_import_project_success_callback;
+	static String s_project_runtime_url;
+
+	static String _read_runtime_url_from_project_json();
 
 	static void _bind_methods();
 };

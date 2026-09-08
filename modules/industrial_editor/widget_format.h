@@ -25,7 +25,7 @@ public:
 
 private:
 	/// Decode an integer as packed BCD (each byte = high nibble tens + low nibble ones).
-	/// p_is_signed: top F-nibble is a sign marker (0xF -> negative, EBPro style).
+	/// p_is_signed: top F-nibble is a sign marker (0xF -> negative, signed-BCD style).
 	static String decode_bcd(uint64_t p_raw, bool p_is_signed);
 	/// Insert a comma thousands separator into a numeric string (respects leading '-').
 	static String add_thousands(const String &p_num);

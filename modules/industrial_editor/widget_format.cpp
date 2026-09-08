@@ -183,9 +183,24 @@ Dictionary WidgetFormat::parse_input(const String &text, const Dictionary &cfg) 
 			return result;
 		}
 
-		// Also reject float-ish input when decimals == 0 (e.g. "3.5").
+		// Also reject non-integer floats when decimals == 0 (e.g. "3.5").
+		// Accept whole values written as "100.0" so keypad OK still writes.
 		if (digits.contains(".") || digits.contains("e") || digits.contains("E")) {
-			result["error"] = TTRC("需要整数，收到浮点数");
+			if (!digits.is_valid_float()) {
+				result["error"] = TTRC("需要整数，收到浮点数");
+				return result;
+			}
+			const double d = digits.to_float();
+			if (!Math::is_equal_approx(d, Math::round(d))) {
+				result["error"] = TTRC("需要整数，收到浮点数");
+				return result;
+			}
+			int64_t whole = (int64_t)Math::round(d);
+			if (neg) {
+				whole = -whole;
+			}
+			result["ok"] = true;
+			result["value"] = whole;
 			return result;
 		}
 
@@ -240,7 +255,7 @@ String WidgetFormat::decode_bcd(uint64_t p_raw, bool p_is_signed) {
 		uint8_t tens = (byte >> 4) & 0x0F;
 		uint8_t ones = byte & 0x0F;
 		if (p_is_signed && b == num_bytes - 1) {
-			// Signed BCD convention (EBPro F-nibble style): the top nibble is a
+			// Signed BCD convention (F-nibble style): the top nibble is a
 			// sign marker — 0xF means negative, otherwise it's a magnitude digit.
 			if (tens == 0xF) {
 				negative = true;

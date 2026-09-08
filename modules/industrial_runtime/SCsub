@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+"""SCons build glue for the industrial_runtime module.
+
+All C++ sources live next to this file. No third-party libraries are used:
+- Networking is provided by modules/websocket (statically linked into Godot).
+- Containers, JSON, Variant and Object come from core/templates + core/io.
+"""
+from misc.utility.scons_hints import *
+
+Import("env")
+Import("env_modules")
+
+env_irt = env_modules.Clone()
+
+sources = [
+    "register_types.cpp",
+    "value_convert.cpp",
+    "tag_cache.cpp",
+    "ws_client.cpp",
+	"industrial_runtime.cpp",
+	"industrial_runtime_host.cpp",
+]
+
+env_irt.add_source_files(env.modules_sources, sources)

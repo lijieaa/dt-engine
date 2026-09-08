@@ -1495,6 +1495,24 @@ fail:
 
 void EditorSettings::init_shortcuts() {
 	ED_SHORTCUT("editor/open_search", TTRC("Focus Search/Filter Bar"), KeyModifierMask::CMD_OR_CTRL | Key::F);
+
+	// Industrial Editor menu shortcuts (registered without default keys so the
+	// menu items can be added via ED_GET_SHORTCUT without "invalid shortcut"
+	// errors; users can bind keys in Editor Settings > Shortcuts).
+	ED_SHORTCUT("editor/new_device", TTRC("New Device"));
+	ED_SHORTCUT("editor/edit_device", TTRC("Edit Device"));
+	ED_SHORTCUT("editor/delete_device", TTRC("Delete Device"));
+	ED_SHORTCUT("editor/duplicate_device", TTRC("Duplicate Device"));
+	ED_SHORTCUT("editor/import_device_csv", TTRC("Import Devices from CSV"));
+	ED_SHORTCUT("editor/export_device_csv", TTRC("Export Devices to CSV"));
+	ED_SHORTCUT("editor/device_diagnose", TTRC("Diagnose Device"));
+	ED_SHORTCUT("editor/device_move_group", TTRC("Move Device to Scan Group"));
+	ED_SHORTCUT("editor/new_tag", TTRC("New Tag"));
+	ED_SHORTCUT("editor/edit_tag", TTRC("Edit Tag"));
+	ED_SHORTCUT("editor/delete_tag", TTRC("Delete Tag"));
+	ED_SHORTCUT("editor/batch_generate_tags", TTRC("Batch Generate Tags"));
+	ED_SHORTCUT("editor/tag_browser", TTRC("Open Tag Browser"));
+	ED_SHORTCUT("editor/export_tag_csv", TTRC("Export Tags to CSV"));
 }
 
 void EditorSettings::setup_language(bool p_initial_setup) {

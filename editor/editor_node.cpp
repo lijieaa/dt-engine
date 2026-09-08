@@ -3998,6 +3998,25 @@ void EditorNode::_menu_option_confirm(int p_option, bool p_confirmed) {
 		case HELP_SUPPORT_GODOT_DEVELOPMENT: {
 			OS::get_singleton()->shell_open("https://fund.godotengine.org/?ref=help_menu");
 		} break;
+
+		// Device menu - handled by IndustrialEditorPlugin via signal.
+		case DEVICE_NEW:
+		case DEVICE_EDIT:
+		case DEVICE_DELETE:
+		case DEVICE_DUPLICATE:
+		case DEVICE_DIAGNOSE:
+		case DEVICE_MOVE_GROUP:
+		case DEVICE_IMPORT_CSV:
+		case DEVICE_EXPORT_CSV:
+		case TAG_NEW:
+		case TAG_EDIT:
+		case TAG_DELETE:
+		case TAG_BATCH_GENERATE:
+		case TAG_BROWSER:
+		case TAG_EXPORT_CSV: {
+			print_line(vformat("industrial_menu: editor_node emit option=%d", p_option));
+			emit_signal(SNAME("industrial_menu_requested"), p_option);
+		} break;
 	}
 }
 
@@ -7976,6 +7995,7 @@ void EditorNode::_bind_methods() {
 	ADD_SIGNAL(MethodInfo("preview_locale_changed"));
 	ADD_SIGNAL(MethodInfo("resource_counter_changed"));
 	ADD_SIGNAL(MethodInfo("distraction_free_mode_changed", PropertyInfo(Variant::BOOL, "enabled")));
+	ADD_SIGNAL(MethodInfo("industrial_menu_requested", PropertyInfo(Variant::INT, "option")));
 }
 
 static Node *_resource_get_edited_scene() {
@@ -8255,6 +8275,40 @@ void EditorNode::_build_help_menu(bool p_dark_mode) {
 	help_menu->add_icon_shortcut(get_editor_theme_native_menu_icon(SNAME("Heart"), menu_type == MENU_TYPE_GLOBAL, p_dark_mode), ED_GET_SHORTCUT("editor/support_development"), HELP_SUPPORT_GODOT_DEVELOPMENT);
 }
 
+void EditorNode::_build_device_menu(bool p_dark_mode) {
+	if (!device_menu) {
+		return;
+	}
+	device_menu->clear(false);
+
+	device_menu->add_shortcut(ED_GET_SHORTCUT("editor/new_device"), DEVICE_NEW);
+	device_menu->add_shortcut(ED_GET_SHORTCUT("editor/edit_device"), DEVICE_EDIT);
+	device_menu->add_shortcut(ED_GET_SHORTCUT("editor/delete_device"), DEVICE_DELETE);
+	device_menu->add_shortcut(ED_GET_SHORTCUT("editor/duplicate_device"), DEVICE_DUPLICATE);
+	device_menu->add_separator();
+	device_menu->add_shortcut(ED_GET_SHORTCUT("editor/import_device_csv"), DEVICE_IMPORT_CSV);
+	device_menu->add_shortcut(ED_GET_SHORTCUT("editor/export_device_csv"), DEVICE_EXPORT_CSV);
+	device_menu->add_separator();
+	device_menu->add_shortcut(ED_GET_SHORTCUT("editor/device_diagnose"), DEVICE_DIAGNOSE);
+	device_menu->add_shortcut(ED_GET_SHORTCUT("editor/device_move_group"), DEVICE_MOVE_GROUP);
+}
+
+void EditorNode::_build_tag_menu(bool p_dark_mode) {
+	if (!tag_menu) {
+		return;
+	}
+	tag_menu->clear(false);
+
+	tag_menu->add_shortcut(ED_GET_SHORTCUT("editor/new_tag"), TAG_NEW);
+	tag_menu->add_shortcut(ED_GET_SHORTCUT("editor/edit_tag"), TAG_EDIT);
+	tag_menu->add_shortcut(ED_GET_SHORTCUT("editor/delete_tag"), TAG_DELETE);
+	tag_menu->add_separator();
+	tag_menu->add_shortcut(ED_GET_SHORTCUT("editor/batch_generate_tags"), TAG_BATCH_GENERATE);
+	tag_menu->add_shortcut(ED_GET_SHORTCUT("editor/tag_browser"), TAG_BROWSER);
+	tag_menu->add_separator();
+	tag_menu->add_shortcut(ED_GET_SHORTCUT("editor/export_tag_csv"), TAG_EXPORT_CSV);
+}
+
 void EditorNode::_add_to_main_menu(const String &p_name, PopupMenu *p_menu) {
 	p_menu->set_name(p_name);
 	main_menu_items.push_back(p_menu);
@@ -8284,6 +8338,8 @@ void EditorNode::_update_main_menu_type() {
 	_build_project_menu(dark_mode);
 	_build_settings_menu(dark_mode);
 	_build_help_menu(dark_mode);
+	_build_device_menu(dark_mode);
+	_build_tag_menu(dark_mode);
 
 	// Delete all menu.
 	if (main_menu_bar) {
@@ -9169,6 +9225,14 @@ EditorNode::EditorNode() {
 	help_menu = memnew(PopupMenu);
 	help_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
 	_add_to_main_menu(TTRC("Help"), help_menu);
+
+	device_menu = memnew(PopupMenu);
+	device_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
+	_add_to_main_menu(TTRC("Device"), device_menu);
+
+	tag_menu = memnew(PopupMenu);
+	tag_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
+	_add_to_main_menu(TTRC("Tags"), tag_menu);
 
 	_update_main_menu_type();
 

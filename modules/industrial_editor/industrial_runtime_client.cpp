@@ -2,9 +2,11 @@
 
 #include "core/config/project_settings.h"
 #include "core/io/json.h"
+#include "core/io/file_access.h"
 #include "core/io/http_client.h"
 #include "core/object/class_db.h"
 #include "core/object/callable_mp.h"
+#include "core/object/object.h"
 #include "core/os/os.h"
 #include "core/string/print_string.h"
 #include "scene/main/http_request.h"
@@ -30,6 +32,8 @@ Array IndustrialRuntimeClient::s_s7_address_catalog;
 Array IndustrialRuntimeClient::s_driver_catalog;
 Callable IndustrialRuntimeClient::s_fetch_callback;
 Callable IndustrialRuntimeClient::s_create_project_success_callback;
+Callable IndustrialRuntimeClient::s_import_project_success_callback;
+String IndustrialRuntimeClient::s_project_runtime_url;
 
 // --- Bind methods ----------------------------------------------------------
 
@@ -131,9 +135,59 @@ IndustrialFieldDef _dict_to_field_def(const Dictionary &p_d) {
 }
 }  // namespace
 
+void IndustrialRuntimeClient::set_project_runtime_url(const String &p_url) {
+	s_project_runtime_url = _normalize(p_url.strip_edges());
+}
+
+String IndustrialRuntimeClient::get_project_setting_runtime_url() {
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	if (ps == nullptr || !ps->has_setting(kProjectSettingKey)) {
+		return String();
+	}
+	Variant v = ps->get_setting(kProjectSettingKey);
+	if (v.get_type() != Variant::STRING) {
+		return String();
+	}
+	return _normalize(String(v).strip_edges());
+}
+
+void IndustrialRuntimeClient::set_project_setting_runtime_url(const String &p_url) {
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	if (ps == nullptr) {
+		return;
+	}
+	const String url = _normalize(p_url.strip_edges());
+	ps->set_setting(kProjectSettingKey, url.is_empty() ? String(kDefaultUrl) : url);
+}
+
+String IndustrialRuntimeClient::_read_runtime_url_from_project_json() {
+	String path = "res://industrial/project.json";
+	ProjectSettings *ps = ProjectSettings::get_singleton();
+	if (ps != nullptr && ps->has_setting("industrial/project/data_path")) {
+		Variant v = ps->get_setting("industrial/project/data_path");
+		if (v.get_type() == Variant::STRING) {
+			String s = v;
+			if (!s.is_empty()) {
+				path = s;
+			}
+		}
+	}
+	Ref<FileAccess> f = FileAccess::open(path, FileAccess::READ);
+	if (f.is_null()) {
+		return String();
+	}
+	const Variant parsed = JSON::parse_string(f->get_as_text());
+	if (parsed.get_type() != Variant::DICTIONARY) {
+		return String();
+	}
+	const Dictionary d = parsed;
+	const String url = String(d.get("runtime_url", "")).strip_edges();
+	return _normalize(url);
+}
+
 String IndustrialRuntimeClient::get_runtime_url() {
-	// 优先级严格按文档：命令行 > 环境变量 > ProjectSettings > EditorSettings > 默认。
-	// 导出后的打包程序：仍有 1/2/3/5 四层可配置。
+	// ProjectSettings is the editor UI that gets written into project.json on save.
+	// Runtime clients read project.json (plus cmdline/env overrides), not ProjectSettings.
 
 	// ---------- (1) Command line: --runtime-url=http://host:port ----------
 	{
@@ -157,37 +211,19 @@ String IndustrialRuntimeClient::get_runtime_url() {
 		}
 	}
 
-	// ---------- (3) ProjectSettings: industrial/runtime/url ----------
+	// ---------- (3) industrial/project.json "runtime_url" ----------
+	if (!s_project_runtime_url.is_empty()) {
+		return s_project_runtime_url;
+	}
 	{
-		ProjectSettings *ps = ProjectSettings::get_singleton();
-		if (ps != nullptr && ps->has_setting(kProjectSettingKey)) {
-			Variant v = ps->get_setting(kProjectSettingKey);
-			if (v.get_type() == Variant::STRING) {
-				String s = v;
-				if (s.length() > 0) {
-					return _normalize(s);
-				}
-			}
+		const String from_file = _read_runtime_url_from_project_json();
+		if (!from_file.is_empty()) {
+			s_project_runtime_url = from_file;
+			return from_file;
 		}
 	}
 
-	// ---------- (4) EditorSettings: industrial/runtime/url (editor only) ---
-#ifdef TOOLS_ENABLED
-	{
-		EditorSettings *es = EditorSettings::get_singleton();
-		if (es != nullptr && es->has_setting(kEditorSettingKey)) {
-			Variant v = es->get_setting(kEditorSettingKey);
-			if (v.get_type() == Variant::STRING) {
-				String s = v;
-				if (s.length() > 0) {
-					return _normalize(s);
-				}
-			}
-		}
-	}
-#endif
-
-	// ---------- (5) Default fallback ----------
+	// ---------- (4) Default fallback ----------
 	return kDefaultUrl;
 }
 
@@ -768,8 +804,12 @@ Dictionary IndustrialRuntimeClient::_tag_field_fallback(const String &p_driver_k
 	}
 
 	// ---- absolute S7 family ----
-	if (p_driver_key.begins_with("siemens_s7_") ||
-		p_driver_key.begins_with("s7_")) {
+	// Canonical catalog key for S7-1200/1500 is exactly "siemens_s7"
+	// (no trailing underscore). begins_with("siemens_s7_") alone misses it
+	// and wrongly falls through to Modbus address types.
+	if (p_driver_key == "siemens_s7" ||
+			p_driver_key.begins_with("siemens_s7_") ||
+			p_driver_key.begins_with("s7_")) {
 		return _make_absolute(p_driver_key, _fallback_s7_addrtypes());
 	}
 	// ---- Mitsubishi absolute SLMP / FX / MC ----
@@ -887,16 +927,9 @@ PackedStringArray IndustrialRuntimeClient::get_address_type_labels(const String 
 		if (label.length() == 0) {
 			label = at.get("id", Variant(""));
 		}
-		String zh = at.get("label_zh", Variant(""));
-		// Prefer "Label (中文)" in the dropdown for quick scanning.  Keep the
-		// raw `id` in the metadata for round-tripping with the backend (the
-		// dialog stores OptionButton metadata so callers get AT id via
-		// get_metadata).
-		String display = label;
-		if (zh.length() > 0) {
-			display = label + "  (" + zh + ")";
-		}
-		out.append(display);
+		// English label/msgid only; callers must atr()/TTR() for display.
+		// Do not append label_zh here (locale-independent Chinese hardcoding).
+		out.append(label);
 	}
 	return out;
 }
@@ -1026,7 +1059,9 @@ void IndustrialRuntimeClient::_on_create_project_completed(int p_result, int p_r
 	}
 }
 
-void IndustrialRuntimeClient::import_project(const String &p_json_body, Node *p_owner) {
+void IndustrialRuntimeClient::import_project(const String &p_json_body, Node *p_owner,
+		const Callable &p_on_success) {
+	s_import_project_success_callback = p_on_success;
 	String base_url = get_runtime_url();
 	HTTPRequest *req = memnew(HTTPRequest);
 	req->set_timeout(30.0);
@@ -1038,12 +1073,15 @@ void IndustrialRuntimeClient::import_project(const String &p_json_body, Node *p_
 	Error err = req->request(url, PackedStringArray(), HTTPClient::METHOD_POST, p_json_body);
 	if (err != OK) {
 		print_line(vformat("industrial_runtime: import_project request failed (%d)", err));
+		s_import_project_success_callback = Callable();
 	}
 }
 
 void IndustrialRuntimeClient::_on_import_project_completed(int p_result, int p_response_code,
 		const PackedStringArray &p_headers, const PackedByteArray &p_body) {
 	(void)p_headers;
+	Callable on_success = s_import_project_success_callback;
+	s_import_project_success_callback = Callable();
 	if (p_result != OK) {
 		print_line(vformat("industrial_runtime: import_project failed (result=%d)", p_result));
 		return;
@@ -1055,4 +1093,210 @@ void IndustrialRuntimeClient::_on_import_project_completed(int p_result, int p_r
 	}
 	String body = String::utf8((const char *)p_body.ptr(), p_body.size());
 	print_line(vformat("industrial_runtime: import_project OK: %s", body));
+	if (on_success.is_valid()) {
+		on_success.call();
+	}
+}
+
+void IndustrialRuntimeClient::collect_acquire(const String &p_session_id, Node *p_owner,
+		const Callable &p_on_done) {
+	ERR_FAIL_NULL(p_owner);
+	if (p_session_id.is_empty()) {
+		print_line("industrial_runtime: collect_acquire skipped (empty session_id)");
+		return;
+	}
+	HTTPRequest *req = memnew(HTTPRequest);
+	req->set_timeout(10.0);
+	p_owner->add_child(req);
+	req->connect("request_completed",
+			callable_mp_static(&IndustrialRuntimeClient::_on_collect_completed).bind(p_on_done, req->get_instance_id()));
+	Dictionary body;
+	body["action"] = "acquire";
+	body["session_id"] = p_session_id;
+	const String url = get_runtime_url() + "/api/v1/runtime/collect";
+	print_line(vformat("industrial_runtime: POST %s acquire=%s", url, p_session_id));
+	const Error err = req->request(url, PackedStringArray(), HTTPClient::METHOD_POST, JSON::stringify(body));
+	if (err != OK) {
+		print_line(vformat("industrial_runtime: collect_acquire request failed (%d)", err));
+		req->queue_free();
+	}
+}
+
+void IndustrialRuntimeClient::collect_release(const String &p_session_id, Node *p_owner,
+		const Callable &p_on_done) {
+	ERR_FAIL_NULL(p_owner);
+	if (p_session_id.is_empty()) {
+		print_line("industrial_runtime: collect_release skipped (empty session_id)");
+		return;
+	}
+	HTTPRequest *req = memnew(HTTPRequest);
+	req->set_timeout(10.0);
+	p_owner->add_child(req);
+	req->connect("request_completed",
+			callable_mp_static(&IndustrialRuntimeClient::_on_collect_completed).bind(p_on_done, req->get_instance_id()));
+	Dictionary body;
+	body["action"] = "release";
+	body["session_id"] = p_session_id;
+	const String url = get_runtime_url() + "/api/v1/runtime/collect";
+	print_line(vformat("industrial_runtime: POST %s release=%s", url, p_session_id));
+	const Error err = req->request(url, PackedStringArray(), HTTPClient::METHOD_POST, JSON::stringify(body));
+	if (err != OK) {
+		print_line(vformat("industrial_runtime: collect_release request failed (%d)", err));
+		req->queue_free();
+	}
+}
+
+bool IndustrialRuntimeClient::write_tag(const String &p_tag, const Variant &p_value, Node *p_owner,
+		const Callable &p_on_done) {
+	ERR_FAIL_NULL_V(p_owner, false);
+	const String tag = p_tag.strip_edges();
+	if (tag.is_empty()) {
+		print_line("industrial_runtime: write_tag skipped (empty tag)");
+		return false;
+	}
+	HTTPRequest *req = memnew(HTTPRequest);
+	req->set_timeout(10.0);
+	p_owner->add_child(req);
+	req->connect("request_completed",
+			callable_mp_static(&IndustrialRuntimeClient::_on_write_tag_completed).bind(p_on_done, req->get_instance_id(), tag));
+	Dictionary body;
+	body["value"] = p_value;
+	PackedStringArray headers;
+	headers.push_back("Content-Type: application/json");
+	const String url = get_runtime_url() + "/api/v1/tags/" + tag.uri_encode() + "/write";
+	print_line(vformat("industrial_runtime: POST write tag=%s value=%s url=%s", tag, p_value, url));
+	const Error err = req->request(url, headers, HTTPClient::METHOD_POST, JSON::stringify(body));
+	if (err != OK) {
+		print_line(vformat("industrial_runtime: write_tag request failed (%d)", err));
+		req->queue_free();
+		return false;
+	}
+	return true;
+}
+
+void IndustrialRuntimeClient::_on_write_tag_completed(int p_result, int p_response_code,
+		const PackedStringArray &p_headers, const PackedByteArray &p_body,
+		const Callable &p_callback, ObjectID p_request_id, const String &p_tag) {
+	(void)p_headers;
+	String body = String::utf8((const char *)p_body.ptr(), p_body.size());
+	const bool ok = p_result == OK && p_response_code == 200;
+	if (!ok) {
+		print_line(vformat("industrial_runtime: write_tag FAILED tag=%s result=%d http=%d body=%s",
+				p_tag, p_result, p_response_code, body));
+	} else {
+		print_line(vformat("industrial_runtime: write_tag OK tag=%s body=%s", p_tag, body));
+	}
+	if (p_callback.is_valid()) {
+		p_callback.call(ok, p_response_code, body);
+	}
+	if (HTTPRequest *req = Object::cast_to<HTTPRequest>(ObjectDB::get_instance(p_request_id))) {
+		req->queue_free();
+	}
+}
+
+void IndustrialRuntimeClient::_on_collect_completed(int p_result, int p_response_code,
+		const PackedStringArray &p_headers, const PackedByteArray &p_body,
+		const Callable &p_callback, ObjectID p_request_id) {
+	(void)p_headers;
+	String body = String::utf8((const char *)p_body.ptr(), p_body.size());
+	if (p_result != OK) {
+		print_line(vformat("industrial_runtime: collect failed (result=%d)", p_result));
+	} else if (p_response_code != 200) {
+		print_line(vformat("industrial_runtime: collect HTTP %d body=%s", p_response_code, body));
+	} else {
+		print_line(vformat("industrial_runtime: collect OK: %s", body));
+	}
+	if (p_callback.is_valid()) {
+		p_callback.call(p_result == OK && p_response_code == 200, p_response_code, body);
+	}
+	if (HTTPRequest *req = Object::cast_to<HTTPRequest>(ObjectDB::get_instance(p_request_id))) {
+		req->queue_free();
+	}
+}
+
+// --- Diagnostics GET helpers -------------------------------------------------
+
+void IndustrialRuntimeClient::_on_json_get_completed(int p_result, int p_response_code,
+		const PackedStringArray &p_headers, const PackedByteArray &p_body,
+		const Callable &p_callback, ObjectID p_request_id) {
+	(void)p_headers;
+	Dictionary data;
+	bool ok = false;
+	if (p_result == OK && p_response_code == 200) {
+		String err;
+		data = _parse_response_body(p_body, &err);
+		ok = !data.is_empty();
+	} else if (p_result == OK && p_response_code != 200) {
+		// Non-200 still may carry a JSON error object; keep empty data.
+		String err;
+		data = _parse_response_body(p_body, &err);
+	}
+	if (p_callback.is_valid()) {
+		p_callback.call(ok, p_response_code, data);
+	}
+	if (HTTPRequest *req = Object::cast_to<HTTPRequest>(ObjectDB::get_instance(p_request_id))) {
+		req->queue_free();
+	}
+}
+
+void IndustrialRuntimeClient::fetch_devices(Node *p_owner, const Callable &p_callback) {
+	ERR_FAIL_NULL(p_owner);
+	HTTPRequest *req = memnew(HTTPRequest);
+	req->set_timeout(10.0);
+	p_owner->add_child(req);
+	req->connect("request_completed",
+			callable_mp_static(&IndustrialRuntimeClient::_on_json_get_completed).bind(p_callback, req->get_instance_id()));
+	const String url = get_runtime_url() + "/api/v1/devices";
+	const Error err = req->request(url);
+	if (err != OK) {
+		print_line(vformat("industrial_runtime: fetch_devices request failed (%d)", err));
+		if (p_callback.is_valid()) {
+			p_callback.call(false, 0, Dictionary());
+		}
+		req->queue_free();
+	}
+}
+
+void IndustrialRuntimeClient::fetch_device_diagnostics(const String &p_device_id, Node *p_owner, const Callable &p_callback) {
+	ERR_FAIL_NULL(p_owner);
+	if (p_device_id.is_empty()) {
+		if (p_callback.is_valid()) {
+			p_callback.call(false, 0, Dictionary());
+		}
+		return;
+	}
+	HTTPRequest *req = memnew(HTTPRequest);
+	req->set_timeout(10.0);
+	p_owner->add_child(req);
+	req->connect("request_completed",
+			callable_mp_static(&IndustrialRuntimeClient::_on_json_get_completed).bind(p_callback, req->get_instance_id()));
+	const String url = get_runtime_url() + "/api/v1/diagnostics/devices/" + p_device_id.uri_encode();
+	print_line(vformat("industrial_runtime: GET %s", url));
+	const Error err = req->request(url);
+	if (err != OK) {
+		print_line(vformat("industrial_runtime: device diagnostics request failed (%d)", err));
+		if (p_callback.is_valid()) {
+			p_callback.call(false, 0, Dictionary());
+		}
+		req->queue_free();
+	}
+}
+
+void IndustrialRuntimeClient::fetch_runtime_diagnostics(Node *p_owner, const Callable &p_callback) {
+	ERR_FAIL_NULL(p_owner);
+	HTTPRequest *req = memnew(HTTPRequest);
+	req->set_timeout(10.0);
+	p_owner->add_child(req);
+	req->connect("request_completed",
+			callable_mp_static(&IndustrialRuntimeClient::_on_json_get_completed).bind(p_callback, req->get_instance_id()));
+	const String url = get_runtime_url() + "/api/v1/diagnostics/runtime";
+	print_line(vformat("industrial_runtime: GET %s", url));
+	const Error err = req->request(url);
+	if (err != OK) {
+		print_line(vformat("industrial_runtime: runtime diagnostics request failed (%d)", err));
+		if (p_callback.is_valid()) {
+			p_callback.call(false, 0, Dictionary());
+		}
+		req->queue_free();
+	}
 }

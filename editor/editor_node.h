@@ -367,6 +367,8 @@ private:
 	PopupMenu *debug_menu = nullptr;
 	PopupMenu *settings_menu = nullptr;
 	PopupMenu *help_menu = nullptr;
+	PopupMenu *device_menu = nullptr;
+	PopupMenu *tag_menu = nullptr;
 	PopupMenu *tool_menu = nullptr;
 	PopupMenu *export_as_menu = nullptr;
 	Button *export_button = nullptr;
@@ -747,6 +749,8 @@ private:
 	void _build_project_menu(bool p_dark_mode);
 	void _build_settings_menu(bool p_dark_mode);
 	void _build_help_menu(bool p_dark_mode);
+	void _build_device_menu(bool p_dark_mode);
+	void _build_tag_menu(bool p_dark_mode);
 
 	void _update_main_menu_type();
 	void _add_to_main_menu(const String &p_name, PopupMenu *p_menu);
