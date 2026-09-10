@@ -7,6 +7,7 @@
 
 class IndustrialDeviceDock;
 class IndustrialDeviceForm;
+class IndustrialTagForm;
 class IndustrialProject;
 class IndustrialNewDeviceDialog;
 class IndustrialNewTagDialog;
@@ -37,6 +38,7 @@ public:
 private:
 	IndustrialDeviceDock *device_dock = nullptr;
 	IndustrialDeviceForm *device_form = nullptr;
+	IndustrialTagForm *tag_form = nullptr;
 	EditorDock *device_form_dock = nullptr;
 	Ref<IndustrialProject> project;
 
@@ -55,9 +57,12 @@ private:
 	void _on_dialog_confirmed_refresh();
 	void _on_project_changed();
 	void _on_device_selected(int p_device_index);
+	void _on_tag_selected(int p_device_index, int p_tag_index);
 	void _on_edit_device_requested(int p_device_index);
 	void _on_new_tag_requested(int p_device_index);
 	void _on_edit_tag_requested(int p_device_index, int p_tag_index);
+	void _show_properties_device(int p_device_index);
+	void _show_properties_tag(int p_device_index, int p_tag_index);
 	void _load_project_data();
 	void _save_project_data();
 	void _publish_project_to_runtime();

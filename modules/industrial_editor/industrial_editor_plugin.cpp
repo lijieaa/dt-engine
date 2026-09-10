@@ -1,12 +1,13 @@
-#include "industrial_editor_plugin.h"
+﻿#include "industrial_editor_plugin.h"
 #include "industrial_device_dock.h"
 #include "industrial_device_form.h"
+#include "industrial_tag_form.h"
 #include "industrial_project.h"
 #include "industrial_csv_io.h"
 #include "industrial_new_device_dialog.h"
 #include "industrial_new_tag_dialog.h"
 #include "industrial_batch_gen_dialog.h"
-#include "industrial_runtime_client.h"
+#include "modules/industrial_runtime/industrial_runtime_client.h"
 #include "industrial_driver_schema.h"   // industrial_get_driver_names / StringList
 
 #include "core/config/project_settings.h"
@@ -129,13 +130,23 @@ void IndustrialEditorPlugin::_notification(int p_what) {
 			device_dock->connect(SNAME("new_device_requested"), callable_mp(this, &IndustrialEditorPlugin::_show_new_device_dialog));
 			device_dock->connect(SNAME("edit_device_requested"), callable_mp(this, &IndustrialEditorPlugin::_on_edit_device_requested));
 			device_dock->connect(SNAME("device_selected"), callable_mp(this, &IndustrialEditorPlugin::_on_device_selected));
+			device_dock->connect(SNAME("tag_selected"), callable_mp(this, &IndustrialEditorPlugin::_on_tag_selected));
 			device_dock->connect(SNAME("new_tag_requested"), callable_mp(this, &IndustrialEditorPlugin::_on_new_tag_requested));
 			device_dock->connect(SNAME("edit_tag_requested"), callable_mp(this, &IndustrialEditorPlugin::_on_edit_tag_requested));
 			add_dock(device_dock);
 
-			// Create the right-side device form.
+			// Same Properties Dock switches DeviceForm <-> TagForm (Scheme A1).
 			device_form = memnew(IndustrialDeviceForm);
 			device_form->set_project(project);
+			device_form->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+			device_form->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+
+			tag_form = memnew(IndustrialTagForm);
+			tag_form->set_project(project);
+			tag_form->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+			tag_form->set_v_size_flags(Control::SIZE_EXPAND_FILL);
+			tag_form->set_visible(false);
+
 			device_form_dock = memnew(EditorDock);
 			device_form_dock->set_name("DeviceProperties");
 			device_form_dock->set_title(TTR("Device Properties"));
@@ -143,8 +154,9 @@ void IndustrialEditorPlugin::_notification(int p_what) {
 			device_form_dock->set_default_slot(EditorDock::DOCK_SLOT_RIGHT_UL);
 			device_form_dock->set_closable(true);
 			device_form_dock->add_child(device_form);
+			device_form_dock->add_child(tag_form);
 			add_dock(device_form_dock);
-			// Show the properties only after a device row is selected.
+			// Show the properties only after a device/tag row is selected.
 			device_form_dock->close();
 
 			// Create dialogs lazily, parented to EditorInterface's base control so
@@ -232,6 +244,7 @@ void IndustrialEditorPlugin::_notification(int p_what) {
 				device_form_dock->queue_free();
 				device_form_dock = nullptr;
 				device_form = nullptr;
+				tag_form = nullptr;
 			}
 
 			project.unref();
@@ -274,9 +287,6 @@ void IndustrialEditorPlugin::on_industrial_menu_requested(int p_option) {
 			if (device_dock) {
 				device_dock->move_to_group();
 			}
-			break;
-		case EditorNode::DEVICE_IMPORT_CSV:
-			_import_devices_csv();
 			break;
 		case EditorNode::DEVICE_EXPORT_CSV:
 			_export_devices_csv();
@@ -430,16 +440,65 @@ void IndustrialEditorPlugin::_on_project_changed() {
 	if (device_dock) device_dock->refresh();
 }
 
-void IndustrialEditorPlugin::_on_device_selected(int p_device_index) {
+void IndustrialEditorPlugin::_show_properties_device(int p_device_index) {
 	if (!device_form || !device_form_dock) {
 		return;
 	}
+	if (tag_form) {
+		tag_form->set_visible(false);
+		tag_form->clear_form();
+	}
+	device_form->set_visible(true);
 	if (p_device_index >= 0) {
 		device_form->edit_device(p_device_index);
+		device_form_dock->set_title(TTR("Device Properties"));
 		device_form_dock->make_visible();
 	} else {
 		device_form->clear_form();
 	}
+}
+
+void IndustrialEditorPlugin::_show_properties_tag(int p_device_index, int p_tag_index) {
+	if (!tag_form || !device_form_dock) {
+		return;
+	}
+	if (device_form) {
+		device_form->set_visible(false);
+		device_form->clear_form();
+	}
+	tag_form->set_visible(true);
+	if (p_device_index >= 0 && p_tag_index >= 0) {
+		tag_form->edit_tag(p_device_index, p_tag_index);
+		String tag_name;
+		if (project.is_valid() && p_device_index < project->get_device_count()) {
+			const Vector<IndustrialTagData> &tags = project->get_device(p_device_index).tags;
+			if (p_tag_index >= 0 && p_tag_index < tags.size()) {
+				tag_name = tags[p_tag_index].name;
+			}
+		}
+		if (tag_name.is_empty()) {
+			device_form_dock->set_title(TTR("Tag Properties"));
+		} else {
+			device_form_dock->set_title(vformat(TTR("Tag Properties - %s"), tag_name));
+		}
+		device_form_dock->make_visible();
+	} else {
+		tag_form->clear_form();
+	}
+}
+
+void IndustrialEditorPlugin::_on_device_selected(int p_device_index) {
+	_show_properties_device(p_device_index);
+}
+
+void IndustrialEditorPlugin::_on_tag_selected(int p_device_index, int p_tag_index) {
+	if (p_device_index < 0 || p_tag_index < 0) {
+		if (tag_form) {
+			tag_form->clear_form();
+		}
+		return;
+	}
+	_show_properties_tag(p_device_index, p_tag_index);
 }
 
 void IndustrialEditorPlugin::_on_edit_device_requested(int p_device_index) {
@@ -459,16 +518,8 @@ void IndustrialEditorPlugin::_on_new_tag_requested(int p_device_index) {
 }
 
 void IndustrialEditorPlugin::_on_edit_tag_requested(int p_device_index, int p_tag_index) {
-	if (!new_tag_dialog || project.is_null() || p_device_index < 0 || p_device_index >= project->get_device_count()) {
-		return;
-	}
-	if (p_tag_index < 0 || p_tag_index >= project->get_device(p_device_index).tags.size()) {
-		return;
-	}
-	new_tag_dialog->set_project(project);
-	new_tag_dialog->set_device_index(p_device_index);
-	new_tag_dialog->edit_tag(p_tag_index);
-	new_tag_dialog->popup_centered();
+	// Scheme A1: existing tags edit in Properties Dock, not the create dialog.
+	_on_tag_selected(p_device_index, p_tag_index);
 }
 
 void IndustrialEditorPlugin::_show_edit_device_dialog() {
