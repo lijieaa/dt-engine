@@ -1,7 +1,7 @@
 # Custom Keypad Architecture Design
 
 Date: 2026-09-10
-Status: design approved in chat; written spec pending user review
+Status: implemented (TSCN backend + four presentation modes; navigation is a registered-callback boundary)
 Scope: `modules/industrial_runtime` and the runtime-facing keypad scene contract
 
 ## 1. Goal

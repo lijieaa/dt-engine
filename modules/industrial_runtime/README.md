@@ -58,6 +58,30 @@ write_source_signal  = "pressed"                  # 父节点信号名
 write_source_property= "value"                    # 回写时取值的父节点属性
 ```
 
+### 1.3 可配置弹出键盘 (Keypad)
+
+`TagNumInput` / `TagAsciiInput` 通过 `InputSessionManager` 打开键盘，不再各自硬编码布局。
+
+**作者工作流：**
+
+1. 新建场景，根节点类型为 `KeypadView`。
+2. 添加 `KeypadActionButton`，设置稳定 `action_id`（如 `insert_text`、`confirm`、`clear`）与可选 `action_payload`。
+3. 在显示用 Label 上设置元数据 `keypad_bind_role`（`input_display` / `previous_value` / `range_hint` / `error`）。
+4. 在 `TagNumInput` / `TagAsciiInput` 上设置 `keypad_id` 或 `keypad_scene_override`。
+5. 选择 `presentation_mode`：`system` / `popup` / `fixed` / `direct_window`（均为嵌入式 `Control`，无原生子窗口）。
+
+示例 fixture：`smoke_proj/keypads/custom_numeric.tscn`。
+
+**回退与失败行为：**
+
+- 无效自定义场景或缺失 `keypad_id`：回退到内置数值/ASCII 默认盘。
+- 已修改（dirty）会话被新会话替换：旧会话 **cancel**，不写 tag。
+- 校验失败或写入失败：会话保持活跃，键盘保持打开，并可在 `error` 角色上显示错误。
+- 导航动作（如 `switch_screen`）只走已注册的 navigation handler；未注册则拒绝，不自动 confirm。
+- 运行时命令（`write_tag` / `call_command` 等）经 `KeypadCommandService` 白名单派发，禁止任意方法路径。
+
+**平台：** 模块 `can_build` 含 windows / linuxbsd / macos / android / ios / web / visionos。`KeypadHost` 继承 `Control`，Web/移动走嵌入布局。
+
 ---
 
 ## 2. 客户端工程 `app/visualization/`
