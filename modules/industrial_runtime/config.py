@@ -1,33 +1,44 @@
 """Build configuration for the industrial_runtime built-in module.
 
-This module provides Godot-side bindings for the driver-engine industrial
-data runtime: WebSocket protocol client, client-side tag cache, tag/property
-binding core, expression evaluator, and data type conversions. All heavy
-logic lives in C++ (PRD §6.3); GDScript in the companion project stays as
-thin UI glue (PRD §6.4).
+Godot-side industrial data runtime: WebSocket client, tag cache, runtime host,
+HTTP client, and HMI Tag* widgets (shared by editor, desktop export, and web).
 """
 
 
 def can_build(env, platform):
-    # The module has no third-party deps and uses only built-in websocket +
-    # core containers. Any desktop platform is fine.
-    return platform in ("windows", "linuxbsd", "macos", "android", "ios", "web", "visionos")
+	# No third-party deps; websocket + core only.
+	return platform in ("windows", "linuxbsd", "macos", "android", "ios", "web", "visionos")
 
 
 def configure(env):
-    pass
+	pass
 
 
 def get_doc_classes():
-    return [
-        "IndustrialRuntime",
-        "IndustrialRuntimeHost",
-        "TagCache",
-        "WSClient",
-        "TagBinding",
-        "ExprEval",
-    ]
+	return [
+		"IndustrialRuntime",
+		"IndustrialRuntimeHost",
+		"IndustrialRuntimeClient",
+		"TagCache",
+		"WSClient",
+		"TagBinding",
+		"ExprEval",
+		"WidgetFormat",
+		"InputSession",
+		"InputSessionManager",
+		"KeypadView",
+		"KeypadActionButton",
+		"KeypadDisplayLabel",
+		"KeypadHost",
+		"KeypadRegistry",
+		"TscnKeypadBackend",
+		"TagNumInput",
+		"TagNumKeypad",
+		"TagAsciiInput",
+		"TagAsciiKeypad",
+		"TagLabel",
+	]
 
 
 def get_doc_path():
-    return "doc_classes"
+	return "doc_classes"

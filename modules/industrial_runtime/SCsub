@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """SCons build glue for the industrial_runtime module.
 
-All C++ sources live next to this file. No third-party libraries are used:
-- Networking is provided by modules/websocket (statically linked into Godot).
-- Containers, JSON, Variant and Object come from core/templates + core/io.
+Runtime data plane (WS/cache/host) plus HMI Tag widgets and HTTP client.
+No third-party libs: websocket module + core containers/JSON.
 """
 from misc.utility.scons_hints import *
 
@@ -12,13 +11,55 @@ Import("env_modules")
 
 env_irt = env_modules.Clone()
 
+# Windows MSVC: interpret module sources as UTF-8 (CJK / symbol literals).
+if env["platform"] == "windows":
+    env_irt.AppendUnique(CCFLAGS=["/utf-8"])
+
 sources = [
     "register_types.cpp",
     "value_convert.cpp",
     "tag_cache.cpp",
     "ws_client.cpp",
-	"industrial_runtime.cpp",
-	"industrial_runtime_host.cpp",
+    "industrial_runtime.cpp",
+    "industrial_runtime_host.cpp",
+    "industrial_runtime_client.cpp",
+    "widget_format.cpp",
+    "widget_trend.cpp",
+    "widget_alarm.cpp",
+    "widget_meter.cpp",
+    "widget_recipe.cpp",
+    "widget_macro.cpp",
+    "tag_widget_util.cpp",
+    "tag_label.cpp",
+    "tag_num_display.cpp",
+    "tag_num_input.cpp",
+    "tag_num_keypad.cpp",
+    "tag_keypad_buffer.cpp",
+    "tag_keypad_placement.cpp",
+    "lamp_state_machine.cpp",
+    "lamp_render_util.cpp",
+    "keypad_action.cpp",
+    "keypad_action_button.cpp",
+    "keypad_display_label.cpp",
+    "keypad_command_service.cpp",
+    "keypad_registry.cpp",
+    "tscn_keypad_backend.cpp",
+    "keypad_view.cpp",
+    "keypad_host.cpp",
+    "input_session.cpp",
+    "input_session_manager.cpp",
+    "tag_ascii_keypad.cpp",
+    "tag_ascii_input.cpp",
+    "tag_lamp.cpp",
+    "tag_multi_state_lamp.cpp",
+    "tag_switch.cpp",
+    "tag_meter.cpp",
+    "tag_bar.cpp",
+    "tag_gauge.cpp",
+    "tag_trend.cpp",
+    "tag_alarm_list.cpp",
+    "tag_recipe.cpp",
+    "tag_macro_button.cpp",
 ]
 
 env_irt.add_source_files(env.modules_sources, sources)
