@@ -1,5 +1,7 @@
 #include "keypad_view.h"
 
+#include "keypad_display_label.h"
+
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/string/ustring.h"
@@ -58,9 +60,15 @@ void KeypadView::_scan_node(Node *p_node) {
 		return;
 	}
 
-	if (p_node->has_meta("keypad_bind_role")) {
-		const String role = p_node->get_meta("keypad_bind_role");
-		if (role == "input_display" || role == "previous_value" || role == "error" || role == "range_hint") {
+	if (p_node->has_meta("keypad_bind_role") || Object::cast_to<KeypadDisplayLabel>(p_node) != nullptr) {
+		String role;
+		const KeypadDisplayLabel *display_label = Object::cast_to<KeypadDisplayLabel>(p_node);
+		if (display_label != nullptr && display_label->get_bind_role() != "none") {
+			role = display_label->get_bind_role();
+		} else if (p_node->has_meta("keypad_bind_role")) {
+			role = p_node->get_meta("keypad_bind_role");
+		}
+		if (KeypadDisplayLabel::is_known_bind_role(role)) {
 			role_nodes[StringName(role)] = p_node;
 		}
 	}
@@ -97,6 +105,16 @@ void KeypadView::_set_role_visible(const StringName &p_role, bool p_visible) {
 	}
 }
 
+void KeypadView::_fit_presentation_size() {
+	// Host places the view with a fixed size; revealing labels (error/limits)
+	// must grow the control or the new text is clipped.
+	const Size2 needed = get_combined_minimum_size();
+	const Size2 current = get_size();
+	if (needed.x > current.x || needed.y > current.y) {
+		set_size(current.max(needed));
+	}
+}
+
 void KeypadView::refresh_from_session() {
 	if (active_session.is_null()) {
 		return;
@@ -105,20 +123,30 @@ void KeypadView::refresh_from_session() {
 	_set_role_text("input_display", active_session->get_display_text());
 	_set_role_text("previous_value", active_session->get_previous_value());
 	_set_role_text("range_hint", active_session->get_range_hint());
+	_set_role_text("min_value", active_session->get_min_display_text());
+	_set_role_text("max_value", active_session->get_max_display_text());
 	_set_role_text("error", error_message);
-	_set_role_visible("error", !error_message.is_empty());
+	_set_role_visible("previous_value", active_session->should_show_previous_value());
+	_set_role_visible("range_hint", !active_session->get_range_hint().is_empty());
+	_set_role_visible("min_value", active_session->should_show_min_value());
+	_set_role_visible("max_value", active_session->should_show_max_value());
+	// Keep the error slot in layout (empty text when idle) so host size still fits.
+	_set_role_visible("error", role_nodes.getptr(StringName("error")) != nullptr);
+	_fit_presentation_size();
 }
 
 void KeypadView::show_error(const String &p_message) {
 	error_message = p_message;
 	_set_role_text("error", error_message);
-	_set_role_visible("error", !error_message.is_empty());
+	_set_role_visible("error", true);
+	_fit_presentation_size();
 }
 
 void KeypadView::clear_error() {
 	error_message = String();
 	_set_role_text("error", String());
-	_set_role_visible("error", false);
+	_set_role_visible("error", role_nodes.getptr(StringName("error")) != nullptr);
+	_fit_presentation_size();
 }
 
 Size2 KeypadView::get_presentation_size() const {

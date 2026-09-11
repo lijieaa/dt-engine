@@ -24,6 +24,12 @@ public:
 	String get_keypad_id() const { return keypad_id; }
 	String get_previous_value() const { return previous_value; }
 	String get_range_hint() const;
+	String get_min_display_text() const;
+	String get_max_display_text() const;
+	String get_out_of_range_message() const;
+	bool should_show_previous_value() const;
+	bool should_show_min_value() const;
+	bool should_show_max_value() const;
 	String get_buffer_text() const;
 	String get_display_text() const;
 	int get_caret_position() const;
@@ -50,6 +56,9 @@ private:
 	bool has_max = false;
 	double min_value = 0.0;
 	double max_value = 0.0;
+	bool show_previous_value = true;
+	bool show_limits_on_keypad = true;
+	String out_of_range_message = "out of range";
 
 	TagKeypadBuffer numeric_buffer;
 	String text_buffer;
@@ -63,6 +72,7 @@ private:
 	bool _insert_text(const String &p_text);
 	Dictionary _normalize_callback_result(const Variant &p_result, const String &p_default_error) const;
 	static String _format_range_value(double p_value);
+	String _format_out_of_range_message() const;
 	static bool _payload_is_empty(const Variant &p_payload);
 	static bool _payload_text(const Variant &p_payload, String &r_text);
 	static bool _payload_step(const Variant &p_payload, double &r_step);

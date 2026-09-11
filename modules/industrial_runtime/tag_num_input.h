@@ -44,6 +44,8 @@ public:
 	bool get_show_limits_on_keypad() const { return show_limits_on_keypad; }
 	void set_restart_on_out_of_range(bool p_v) { restart_on_out_of_range = p_v; }
 	bool get_restart_on_out_of_range() const { return restart_on_out_of_range; }
+	void set_out_of_range_message(const String &p_v) { out_of_range_message = p_v; }
+	String get_out_of_range_message() const { return out_of_range_message; }
 	void set_show_previous_value(bool p_v) { show_previous_value = p_v; }
 	bool get_show_previous_value() const { return show_previous_value; }
 	void set_hide_keypad_title(bool p_v) { hide_keypad_title = p_v; }
@@ -77,6 +79,7 @@ private:
 	double max_value = 100.0;
 	bool show_limits_on_keypad = true;
 	bool restart_on_out_of_range = false;
+	String out_of_range_message = "out of range";
 	bool show_previous_value = true;
 	bool hide_keypad_title = false;
 	String keypad_anchor = "center";
@@ -84,6 +87,7 @@ private:
 	String keypad_side = "bottom";
 	String keypad_align = "center";
 
+	String _format_out_of_range_message() const;
 	void flash_error(const String &p_msg);
 	void revert_error_style();
 };

@@ -195,7 +195,26 @@ TEST_CASE("[Keypad][Session] validates numeric range before commit") {
 
 	const Dictionary result = session->validate_buffer();
 	CHECK_FALSE((bool)result.get("ok", true));
+	CHECK(result.get("error", String()) == "out of range");
 	CHECK(session->is_active());
+}
+
+TEST_CASE("[Keypad][Session] uses custom out_of_range_message with placeholders") {
+	Ref<InputSession> session = memnew(InputSession);
+	Dictionary descriptor;
+	descriptor["input_mode"] = "numeric";
+	descriptor["initial_value"] = "150";
+	descriptor["has_min"] = true;
+	descriptor["min_value"] = 0.0;
+	descriptor["has_max"] = true;
+	descriptor["max_value"] = 100.0;
+	descriptor["out_of_range_message"] = "Value must be {min}-{max}";
+	session->configure(descriptor);
+
+	const Dictionary result = session->validate_buffer();
+	CHECK_FALSE((bool)result.get("ok", true));
+	CHECK(result.get("error", String()) == "Value must be 0-100");
+	CHECK(session->get_out_of_range_message() == "Value must be 0-100");
 }
 
 TEST_CASE("[Keypad][Session] accepts numeric values inside the configured range") {

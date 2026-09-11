@@ -66,7 +66,10 @@ write_source_property= "value"                    # 回写时取值的父节点�
 
 1. 新建场景，根节点类型为 `KeypadView`。
 2. 添加 `KeypadActionButton`，设置稳定 `action_id`（如 `insert_text`、`confirm`、`clear`）与可选 `action_payload`。
-3. 在显示用 Label 上设置元数据 `keypad_bind_role`（`input_display` / `previous_value` / `range_hint` / `error`）。
+3. 用 `KeypadDisplayLabel`，在检查器里选 **Bind Role**（`input_display` / `previous_value` / `min_value` / `max_value` / `range_hint` / `error`）。
+   - 也兼容旧写法：普通 Label 的元数据 `keypad_bind_role`
+   - `range_hint`：整句范围（如 `0 - 100`）
+   - `min_value` / `max_value`：分开绑定下限/上限，可在场景里自排版（如 `Min` + 数值 + `Max` + 数值）
 4. 在 `TagNumInput` / `TagAsciiInput` 上设置 `keypad_id` 或 `keypad_scene_override`。
 5. 选择 `presentation_mode`：`system` / `popup` / `fixed` / `direct_window`（均为嵌入式 `Control`，无原生子窗口）。
 
@@ -79,6 +82,7 @@ write_source_property= "value"                    # 回写时取值的父节点�
 - 校验失败或写入失败：会话保持活跃，键盘保持打开，并可在 `error` 角色上显示错误。
 - 导航动作（如 `switch_screen`）只走已注册的 navigation handler；未注册则拒绝，不自动 confirm。
 - 运行时命令（`write_tag` / `call_command` 等）经 `KeypadCommandService` 白名单派发，禁止任意方法路径。
+- `TagNumInput.out_of_range_message`：自定义越界错误文案，支持 `{min}` / `{max}` 占位符。
 
 **平台：** 模块 `can_build` 含 windows / linuxbsd / macos / android / ios / web / visionos。`KeypadHost` 继承 `Control`，Web/移动走嵌入布局。
 

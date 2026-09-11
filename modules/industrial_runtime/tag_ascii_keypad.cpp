@@ -1,13 +1,13 @@
 #include "tag_ascii_keypad.h"
 
 #include "keypad_action_button.h"
+#include "keypad_display_label.h"
 
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/string/ustring.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/control.h"
-#include "scene/gui/label.h"
 #include "scene/gui/margin_container.h"
 
 void TagAsciiKeypad::_bind_methods() {
@@ -38,8 +38,8 @@ void TagAsciiKeypad::_rebuild_ui() {
 	root->add_theme_constant_override("separation", 8);
 	margin->add_child(root);
 
-	Label *display = memnew(Label);
-	display->set_meta("keypad_bind_role", "input_display");
+	KeypadDisplayLabel *display = memnew(KeypadDisplayLabel);
+	display->set_bind_role("input_display");
 	display->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_LEFT);
 	display->set_custom_minimum_size(Size2(0, 40));
 	display->add_theme_font_size_override("font_size", 22);

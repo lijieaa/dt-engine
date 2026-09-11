@@ -4,6 +4,7 @@ TEST_FORCE_LINK(test_keypad_scene)
 
 #include "modules/industrial_runtime/input_session.h"
 #include "modules/industrial_runtime/keypad_action_button.h"
+#include "modules/industrial_runtime/keypad_display_label.h"
 #include "modules/industrial_runtime/keypad_host.h"
 #include "modules/industrial_runtime/input_session_manager.h"
 #include "modules/industrial_runtime/keypad_registry.h"
@@ -53,20 +54,32 @@ TEST_SUITE("[Keypad][SceneTree]") {
 
 TEST_CASE("[Keypad][SceneTree] view refreshes roles and forwards button actions") {
 	KeypadView *view = memnew(KeypadView);
-	Label *display = memnew(Label);
-	display->set_meta("keypad_bind_role", "input_display");
+	KeypadDisplayLabel *display = memnew(KeypadDisplayLabel);
+	display->set_bind_role("input_display");
 	view->add_child(display);
 
-	Label *previous = memnew(Label);
-	previous->set_meta("keypad_bind_role", "previous_value");
+	KeypadDisplayLabel *previous = memnew(KeypadDisplayLabel);
+	previous->set_bind_role("previous_value");
+	previous->set_visible(false);
 	view->add_child(previous);
 
-	Label *range = memnew(Label);
-	range->set_meta("keypad_bind_role", "range_hint");
+	KeypadDisplayLabel *range = memnew(KeypadDisplayLabel);
+	range->set_bind_role("range_hint");
+	range->set_visible(false);
 	view->add_child(range);
 
-	Label *error = memnew(Label);
-	error->set_meta("keypad_bind_role", "error");
+	KeypadDisplayLabel *min_label = memnew(KeypadDisplayLabel);
+	min_label->set_bind_role("min_value");
+	min_label->set_visible(false);
+	view->add_child(min_label);
+
+	KeypadDisplayLabel *max_label = memnew(KeypadDisplayLabel);
+	max_label->set_bind_role("max_value");
+	max_label->set_visible(false);
+	view->add_child(max_label);
+
+	KeypadDisplayLabel *error = memnew(KeypadDisplayLabel);
+	error->set_bind_role("error");
 	error->set_visible(false);
 	view->add_child(error);
 
@@ -96,12 +109,18 @@ TEST_CASE("[Keypad][SceneTree] view refreshes roles and forwards button actions"
 	CHECK(display->get_text() == "12");
 	CHECK(previous->get_text() == "10");
 	CHECK(range->get_text() == "0 - 99");
+	CHECK(min_label->get_text() == "0");
+	CHECK(max_label->get_text() == "99");
+	CHECK(previous->is_visible());
+	CHECK(range->is_visible());
+	CHECK(min_label->is_visible());
+	CHECK(max_label->is_visible());
 
 	view->show_error("invalid value");
 	CHECK(error->is_visible());
 	CHECK(error->get_text() == "invalid value");
 	view->clear_error();
-	CHECK_FALSE(error->is_visible());
+	CHECK(error->is_visible());
 	CHECK(error->get_text().is_empty());
 
 	button->press();
@@ -110,6 +129,24 @@ TEST_CASE("[Keypad][SceneTree] view refreshes roles and forwards button actions"
 	CHECK(scene_last_action.get("payload", Variant()) == "9");
 	CHECK((int64_t)scene_last_action.get("source_id", int64_t(0)) == (int64_t)button->get_instance_id());
 	CHECK_FALSE((bool)scene_last_action.get("repeat", true));
+
+	memdelete(view);
+}
+
+TEST_CASE("[Keypad][SceneTree] view still accepts legacy metadata bind roles") {
+	KeypadView *view = memnew(KeypadView);
+	Label *display = memnew(Label);
+	display->set_meta("keypad_bind_role", "input_display");
+	view->add_child(display);
+	SceneTree::get_singleton()->get_root()->add_child(view);
+
+	Ref<InputSession> session = memnew(InputSession);
+	Dictionary descriptor;
+	descriptor["input_mode"] = "numeric";
+	descriptor["initial_value"] = "5";
+	session->configure(descriptor);
+	view->bind_session(session);
+	CHECK(display->get_text() == "5");
 
 	memdelete(view);
 }

@@ -8,6 +8,7 @@
 #include "keypad_action.h"
 #include "keypad_action_button.h"
 #include "keypad_backend.h"
+#include "keypad_display_label.h"
 #include "keypad_host.h"
 #include "keypad_registry.h"
 #include "keypad_view.h"
@@ -20,6 +21,7 @@
 #include "tag_gauge.h"
 #include "tag_label.h"
 #include "tag_lamp.h"
+#include "tag_multi_state_lamp.h"
 #include "tag_macro_button.h"
 #include "tag_meter.h"
 #include "tag_num_display.h"
@@ -70,6 +72,7 @@ void initialize_industrial_runtime_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(InputSession);
 	GDREGISTER_CLASS(InputSessionManager);
 	GDREGISTER_CLASS(KeypadActionButton);
+	GDREGISTER_CLASS(KeypadDisplayLabel);
 	GDREGISTER_CLASS(KeypadView);
 	GDREGISTER_CLASS(KeypadHost);
 	GDREGISTER_CLASS(KeypadRegistry);
@@ -89,6 +92,7 @@ void initialize_industrial_runtime_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_CLASS(TagAsciiInput);
 	GDREGISTER_CLASS(TagAsciiKeypad);
 	GDREGISTER_CLASS(TagLamp);
+	GDREGISTER_CLASS(TagMultiStateLamp);
 	GDREGISTER_CLASS(TagSwitch);
 	GDREGISTER_CLASS(TagMeter);
 	GDREGISTER_CLASS(TagBar);

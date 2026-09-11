@@ -5,6 +5,7 @@
 #include "widget_format.h"
 
 #include "core/input/input_event.h"
+#include "core/math/math_funcs.h"
 #include "core/object/callable_mp.h"
 #include "core/object/class_db.h"
 #include "core/string/ustring.h"
@@ -43,6 +44,8 @@ void TagNumInput::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_show_limits_on_keypad"), &TagNumInput::get_show_limits_on_keypad);
 	ClassDB::bind_method(D_METHOD("set_restart_on_out_of_range", "v"), &TagNumInput::set_restart_on_out_of_range);
 	ClassDB::bind_method(D_METHOD("get_restart_on_out_of_range"), &TagNumInput::get_restart_on_out_of_range);
+	ClassDB::bind_method(D_METHOD("set_out_of_range_message", "message"), &TagNumInput::set_out_of_range_message);
+	ClassDB::bind_method(D_METHOD("get_out_of_range_message"), &TagNumInput::get_out_of_range_message);
 	ClassDB::bind_method(D_METHOD("set_show_previous_value", "v"), &TagNumInput::set_show_previous_value);
 	ClassDB::bind_method(D_METHOD("get_show_previous_value"), &TagNumInput::get_show_previous_value);
 	ClassDB::bind_method(D_METHOD("set_hide_keypad_title", "v"), &TagNumInput::set_hide_keypad_title);
@@ -67,6 +70,7 @@ void TagNumInput::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "max_value"), "set_max_value", "get_max_value");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_limits_on_keypad"), "set_show_limits_on_keypad", "get_show_limits_on_keypad");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "restart_on_out_of_range"), "set_restart_on_out_of_range", "get_restart_on_out_of_range");
+	ADD_PROPERTY(PropertyInfo(Variant::STRING, "out_of_range_message"), "set_out_of_range_message", "get_out_of_range_message");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "show_previous_value"), "set_show_previous_value", "get_show_previous_value");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "hide_keypad_title"), "set_hide_keypad_title", "get_hide_keypad_title");
 	ADD_PROPERTY(PropertyInfo(Variant::STRING, "keypad_anchor", PROPERTY_HINT_ENUM, "center,screen,control"), "set_keypad_anchor", "get_keypad_anchor");
@@ -168,6 +172,7 @@ void TagNumInput::_begin_input_session() {
 	descriptor["max_value"] = max_value;
 	descriptor["show_previous_value"] = show_previous_value;
 	descriptor["show_limits_on_keypad"] = show_limits_on_keypad;
+	descriptor["out_of_range_message"] = out_of_range_message;
 	descriptor["hide_keypad_title"] = hide_keypad_title;
 	descriptor["anchor"] = keypad_anchor;
 	descriptor["screen_cell"] = keypad_screen_cell;
@@ -194,15 +199,31 @@ Dictionary TagNumInput::_validate_input_session_text(const String &p_text) const
 	const double numeric = tag_widget::to_float(value, 0.0f);
 	if (use_min && numeric < min_value) {
 		result["ok"] = false;
-		result["error"] = "out of range";
+		result["error"] = _format_out_of_range_message();
 		return result;
 	}
 	if (use_max && numeric > max_value) {
 		result["ok"] = false;
-		result["error"] = "out of range";
+		result["error"] = _format_out_of_range_message();
 		return result;
 	}
 	return result;
+}
+
+String TagNumInput::_format_out_of_range_message() const {
+	String message = out_of_range_message.strip_edges();
+	if (message.is_empty()) {
+		message = "out of range";
+	}
+	String min_text = "...";
+	String max_text = "...";
+	if (use_min) {
+		min_text = Math::is_equal_approx(min_value, Math::round(min_value)) ? String::num_int64((int64_t)Math::round(min_value)) : String::num(min_value);
+	}
+	if (use_max) {
+		max_text = Math::is_equal_approx(max_value, Math::round(max_value)) ? String::num_int64((int64_t)Math::round(max_value)) : String::num(max_value);
+	}
+	return message.replace("{min}", min_text).replace("{max}", max_text);
 }
 
 Dictionary TagNumInput::_commit_input_session_text(const String &p_text) {

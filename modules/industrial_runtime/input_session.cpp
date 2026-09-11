@@ -18,6 +18,9 @@ void InputSession::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_keypad_id"), &InputSession::get_keypad_id);
 	ClassDB::bind_method(D_METHOD("get_previous_value"), &InputSession::get_previous_value);
 	ClassDB::bind_method(D_METHOD("get_range_hint"), &InputSession::get_range_hint);
+	ClassDB::bind_method(D_METHOD("get_min_display_text"), &InputSession::get_min_display_text);
+	ClassDB::bind_method(D_METHOD("get_max_display_text"), &InputSession::get_max_display_text);
+	ClassDB::bind_method(D_METHOD("get_out_of_range_message"), &InputSession::get_out_of_range_message);
 	ClassDB::bind_method(D_METHOD("get_buffer_text"), &InputSession::get_buffer_text);
 	ClassDB::bind_method(D_METHOD("get_display_text"), &InputSession::get_display_text);
 	ClassDB::bind_method(D_METHOD("get_caret_position"), &InputSession::get_caret_position);
@@ -41,6 +44,9 @@ void InputSession::configure(const Dictionary &p_descriptor) {
 	has_max = (bool)p_descriptor.get("has_max", false);
 	min_value = (double)p_descriptor.get("min_value", 0.0);
 	max_value = (double)p_descriptor.get("max_value", 0.0);
+	show_previous_value = (bool)p_descriptor.get("show_previous_value", true);
+	show_limits_on_keypad = (bool)p_descriptor.get("show_limits_on_keypad", true);
+	out_of_range_message = p_descriptor.get("out_of_range_message", String("out of range"));
 	modified = false;
 	active = true;
 	shift_on = false;
@@ -62,13 +68,53 @@ String InputSession::get_buffer_text() const {
 }
 
 String InputSession::get_range_hint() const {
-	if (!has_min && !has_max) {
+	if (!show_limits_on_keypad || (!has_min && !has_max)) {
 		return String();
 	}
 
 	const String lower = has_min ? _format_range_value(min_value) : String("...");
 	const String upper = has_max ? _format_range_value(max_value) : String("...");
 	return lower + " - " + upper;
+}
+
+String InputSession::get_min_display_text() const {
+	if (!should_show_min_value()) {
+		return String();
+	}
+	return _format_range_value(min_value);
+}
+
+String InputSession::get_max_display_text() const {
+	if (!should_show_max_value()) {
+		return String();
+	}
+	return _format_range_value(max_value);
+}
+
+bool InputSession::should_show_previous_value() const {
+	return show_previous_value && !previous_value.is_empty();
+}
+
+bool InputSession::should_show_min_value() const {
+	return show_limits_on_keypad && has_min;
+}
+
+bool InputSession::should_show_max_value() const {
+	return show_limits_on_keypad && has_max;
+}
+
+String InputSession::get_out_of_range_message() const {
+	return _format_out_of_range_message();
+}
+
+String InputSession::_format_out_of_range_message() const {
+	String message = out_of_range_message.strip_edges();
+	if (message.is_empty()) {
+		message = "out of range";
+	}
+	const String min_text = has_min ? _format_range_value(min_value) : String("...");
+	const String max_text = has_max ? _format_range_value(max_value) : String("...");
+	return message.replace("{min}", min_text).replace("{max}", max_text);
 }
 
 String InputSession::_format_range_value(double p_value) {
@@ -421,14 +467,14 @@ Dictionary InputSession::validate_buffer() const {
 			Dictionary result;
 			result["ok"] = false;
 			result["value"] = value;
-			result["error"] = "out of range";
+			result["error"] = _format_out_of_range_message();
 			return result;
 		}
 		if (has_max && numeric > max_value) {
 			Dictionary result;
 			result["ok"] = false;
 			result["value"] = value;
-			result["error"] = "out of range";
+			result["error"] = _format_out_of_range_message();
 			return result;
 		}
 	}

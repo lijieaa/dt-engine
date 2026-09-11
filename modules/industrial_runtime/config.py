@@ -28,6 +28,7 @@ def get_doc_classes():
 		"InputSessionManager",
 		"KeypadView",
 		"KeypadActionButton",
+		"KeypadDisplayLabel",
 		"KeypadHost",
 		"KeypadRegistry",
 		"TscnKeypadBackend",

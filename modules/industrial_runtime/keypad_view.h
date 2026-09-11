@@ -23,6 +23,7 @@ class KeypadView : public Control {
 	void _disconnect_action_buttons();
 	void _set_role_text(const StringName &p_role, const String &p_text);
 	void _set_role_visible(const StringName &p_role, bool p_visible);
+	void _fit_presentation_size();
 	void _on_action_requested(const Dictionary &p_request);
 
 protected:

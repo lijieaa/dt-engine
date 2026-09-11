@@ -64,6 +64,7 @@ The plan must preserve their current numeric validation, min/max, caret editing,
 | `modules/industrial_runtime/input_session_manager.h/.cpp` | One active session, lifecycle, focus switching, and keypad binding |
 | `modules/industrial_runtime/keypad_view.h/.cpp` | Native TSCN root contract, display-role binding, refresh, and error presentation |
 | `modules/industrial_runtime/keypad_action_button.h/.cpp` | Serialized action button and mouse/touch long-press repeat |
+| `modules/industrial_runtime/keypad_display_label.h/.cpp` | Display Label with inspector `bind_role` (preferred over metadata) |
 | `modules/industrial_runtime/keypad_backend.h` | Backend request and resolved-definition types |
 | `modules/industrial_runtime/keypad_registry.h/.cpp` | Keypad registration, defaults, and fallback resolution |
 | `modules/industrial_runtime/tscn_keypad_backend.h/.cpp` | `PackedScene` loading, root validation, instantiation, and disposal |

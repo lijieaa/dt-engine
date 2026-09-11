@@ -19,13 +19,16 @@ class KeypadActionButton : public Button {
 	Timer *repeat_timer = nullptr;
 
 	static bool _is_repeatable_action(const String &p_action_id);
+	static bool _action_requires_payload(const String &p_action_id);
 	void _emit_action(bool p_repeat);
 	void _start_repeat();
 	void _stop_repeat();
 	void _on_repeat_timeout();
+	Variant _normalize_payload_for_action(const String &p_action_id, const Variant &p_payload) const;
 
 protected:
 	static void _bind_methods();
+	void _validate_property(PropertyInfo &p_property) const;
 	virtual void pressed() override;
 	virtual void gui_input(const Ref<InputEvent> &p_event) override;
 	void _notification(int p_what);

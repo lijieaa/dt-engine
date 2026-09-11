@@ -41,3 +41,8 @@ bool keypad_action_id_is_known(const String &p_action_id) {
 			keypad_action_id_is_navigation(p_action_id) ||
 			keypad_action_id_is_runtime_command(p_action_id);
 }
+
+String keypad_action_id_property_hint() {
+	// Keep stable protocol IDs selectable in the inspector (same idea as Bind Role).
+	return "insert_text,decimal,toggle_sign,backspace,delete,clear,move_left,move_right,move_home,move_end,increment,decrement,toggle_shift,confirm,cancel,focus_next,focus_previous,switch_keypad,open_window,close_window,switch_screen,write_tag,set_tag,toggle_tag,increment_tag,decrement_tag,call_command";
+}

@@ -325,6 +325,11 @@ bind_role = "input_display"
 bind_role = "previous_value"
 bind_role = "error"
 bind_role = "range_hint"
+bind_role = "min_value"
+bind_role = "max_value"
+
+Preferred authoring type: `KeypadDisplayLabel` with inspector property `bind_role`.
+Legacy: any node metadata `keypad_bind_role` with the same string values.
 ```
 
 The view updates these nodes from the session. A custom scene may omit any
